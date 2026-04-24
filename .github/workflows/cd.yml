@@ -1,0 +1,123 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/logitrack-backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/logitrack-frontend
+
+jobs:
+  build-push:
+    name: Build & push container images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BACKEND }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:sha-${{ github.sha }}
+            ${{ env.IMAGE_FRONTEND }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy · staging
+    runs-on: ubuntu-latest
+    needs: build-push
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Kubernetes manifests (placeholder)
+        run: |
+          echo "kubectl apply -f k8s/staging/ -n logitrack-staging"
+      - name: Smoke test /api/health
+        run: |
+          echo "curl -sf https://staging.logitrack.it/api/health"
+
+  integration-tests:
+    name: Integration · Playwright
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Playwright suite (placeholder)
+        run: echo "npx playwright test --config tests/e2e/playwright.config.ts"
+
+  deploy-production:
+    name: Deploy · production (manual approval)
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    environment:
+      name: production
+      url: https://app.logitrack.it
+    steps:
+      - uses: actions/checkout@v4
+      - name: Blue-green rollout (placeholder)
+        run: echo "kubectl apply -f k8s/production/ && kubectl rollout status deploy/logitrack-backend"
+      - name: Health check
+        run: echo "curl -sf https://app.logitrack.it/api/health"
+
+  release:
+    name: Release notes
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: always()
+    steps:
+      - name: Slack webhook (placeholder)
+        run: echo "Slack notification placeholder"

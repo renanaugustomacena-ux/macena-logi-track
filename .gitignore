@@ -1,0 +1,64 @@
+# -----------------------------------------------------------------------------
+# LogiTrack — root .gitignore
+# -----------------------------------------------------------------------------
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+
+# Go
+/bin/
+/backend/bin/
+/backend/coverage.out
+*.test
+*.out
+*.prof
+vendor/
+
+# Node.js / Vite
+node_modules/
+.vite/
+/frontend/dist/
+/frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Editors & IDEs
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Tooling caches
+.cache/
+.parcel-cache/
+.eslintcache
+.turbo/
+.npm/
+
+# Test & build artefacts
+coverage/
+dist/
+build/
+out/
+tmp/
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# OS-specific
+.fseventsd/
+.Spotlight-V100/
+.Trashes/

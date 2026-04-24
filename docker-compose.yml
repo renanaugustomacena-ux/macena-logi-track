@@ -1,0 +1,117 @@
+# LogiTrack — full-stack local development orchestration.
+#
+# Services:
+#   logitrack-backend   Go/Gin API on :8080
+#   logitrack-frontend  Vue 3 SPA on :5174 (nginx in prod)
+#   logitrack-mongodb   MongoDB 7 persistent volume on :27017
+#   logitrack-redis     Redis 7 cache + pub/sub on :6380 (host)
+#   logitrack-simulator optional telematics simulator (profile: demo)
+#
+# Usage:
+#   cp .env.example .env
+#   docker compose up --build
+#   docker compose --profile demo up --build    # include the simulator
+
+services:
+  logitrack-mongodb:
+    image: mongo:7
+    container_name: logitrack-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-logitrack}
+    ports:
+      - "27017:27017"
+    volumes:
+      - logitrack-mongo-data:/data/db
+      - logitrack-mongo-config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  logitrack-redis:
+    image: redis:7-alpine
+    container_name: logitrack-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  logitrack-backend:
+    build:
+      context: ./backend
+    container_name: logitrack-backend
+    restart: unless-stopped
+    depends_on:
+      logitrack-mongodb:
+        condition: service_healthy
+      logitrack-redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_PORT: "8080"
+      MONGO_URI: mongodb://logitrack-mongodb:27017
+      MONGO_DB: ${MONGO_DB:-logitrack}
+      REDIS_URL: redis://logitrack-redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-hex-32}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-720h}
+      HTTP_CORS_ALLOWED: "http://localhost:5174,http://127.0.0.1:5174"
+      HTTP_WS_ORIGINS: "http://localhost:5174,http://127.0.0.1:5174"
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-logitrack-backend}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
+      OSRM_ALLOWED_HOSTS: "router.project-osrm.org,osrm.logitrack.local"
+      AIDA_API_BASE: ${AIDA_API_BASE:-}
+      SEED_DEMO: "true"
+    ports:
+      - "8080:8080"
+    # Distroless runtime has no shell/wget; the backend exposes /api/health
+    # over HTTP which the frontend/host probes directly. Compose healthcheck
+    # is intentionally omitted; frontend uses `service_started` below.
+
+  logitrack-frontend:
+    build:
+      context: ./frontend
+    container_name: logitrack-frontend
+    restart: unless-stopped
+    depends_on:
+      logitrack-backend:
+        condition: service_started
+    ports:
+      - "5174:5174"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5174/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  logitrack-simulator:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.simulator
+    container_name: logitrack-simulator
+    profiles: ["demo"]
+    restart: unless-stopped
+    depends_on:
+      logitrack-backend:
+        condition: service_healthy
+    environment:
+      LOGITRACK_API_BASE: http://logitrack-backend:8080
+      SIM_TENANT_ID: demo-tenant
+      SIM_USER_ID: demo-sim
+      SIM_JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-hex-32}
+      SIM_JWT_ISSUER: logitrack.it
+      SIM_LOOP: "true"
+      SIM_RATE_HZ: "1"
+
+volumes:
+  logitrack-mongo-data:
+  logitrack-mongo-config:

@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --logitrack-teal: #0f4c5c;
+  --logitrack-blue: #1d4ed8;
+  --logitrack-amber: #f59e0b;
+}
+
+body {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet tiles live inside rounded cards; remove default focus halo
+ * inside the map for a cleaner dashboard look. */
+.leaflet-container:focus {
+  outline: none;
+}
