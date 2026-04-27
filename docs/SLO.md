@@ -38,6 +38,6 @@ Customer-facing declaration:
 ## Italian holidays
 
 LogiTrack's on-call team observes the full list of Italian national
-holidays (including patron-saint day for Verona: 21 maggio San Zeno).
+holidays (including patron-saint day for Verona: 12 aprile San Zeno).
 SLA response-time clocks pause on these dates; SLA uptime clocks do
 not.
