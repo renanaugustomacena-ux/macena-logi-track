@@ -3,12 +3,27 @@
 # Services:
 #   logitrack-backend   Go/Gin API on :8080
 #   logitrack-frontend  Vue 3 SPA on :5174 (nginx in prod)
-#   logitrack-mongodb   MongoDB 7 persistent volume on :27017
-#   logitrack-redis     Redis 7 cache + pub/sub on :6380 (host)
+#   logitrack-mongodb   MongoDB 7 with auth, host-bound on 127.0.0.1:27017
+#   logitrack-redis     Redis 7 with requirepass, host-bound on 127.0.0.1:6380
 #   logitrack-simulator optional telematics simulator (profile: demo)
+#
+# Production-hardening pass (2026-04-27):
+#   - Mongo + Redis now require credentials. The previous default
+#     was unauthenticated, and the published ports were on
+#     0.0.0.0 — anyone on the host LAN could connect read/write
+#     without a password.
+#   - Both services now bind to 127.0.0.1 only. Containers on the
+#     compose network still talk to them by name (logitrack-mongodb,
+#     logitrack-redis) at the unbound internal port.
+#   - Credentials default to dev-only placeholders that let
+#     `cp .env.example .env && docker compose up` work, but they
+#     are documented as DEV-ONLY in .env.example. Production
+#     deployments must rotate these via secret manager injection.
 #
 # Usage:
 #   cp .env.example .env
+#   # (edit .env at minimum: JWT_SECRET, MONGO_PASSWORD, REDIS_PASSWORD,
+#   #  LOGITRACK_IDENTITY_DEMO_USER and LOGITRACK_IDENTITY_DEMO_PASSWORD)
 #   docker compose up --build
 #   docker compose --profile demo up --build    # include the simulator
 
@@ -19,13 +34,20 @@ services:
     restart: unless-stopped
     environment:
       MONGO_INITDB_DATABASE: ${MONGO_DB:-logitrack}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-logitrack}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD must be set in .env}
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - logitrack-mongo-data:/data/db
       - logitrack-mongo-config:/data/configdb
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      # Authenticated ping. CMD-SHELL form so $MONGO_INITDB_ROOT_*
+      # interpolate at exec time inside the container; the bare CMD
+      # array form passes them as literal strings.
+      test:
+        - CMD-SHELL
+        - 'mongosh --quiet --username "$$MONGO_INITDB_ROOT_USERNAME" --password "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand({ping:1}).ok" | grep -q 1'
       interval: 10s
       timeout: 5s
       retries: 10
@@ -35,11 +57,27 @@ services:
     image: redis:7-alpine
     container_name: logitrack-redis
     restart: unless-stopped
-    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    # requirepass is the simplest auth path for Redis 7. Production
+    # deployments may prefer ACL users; redis-cli AUTH still works
+    # against requirepass for backward compat.
+    command:
+      - "redis-server"
+      - "--requirepass"
+      - "${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}"
+      - "--save"
+      - "60"
+      - "1"
+      - "--appendonly"
+      - "no"
+    environment:
+      # Exposed to the healthcheck via $$ escape so compose passes
+      # the literal $REDIS_PASSWORD into the container env.
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # CMD-SHELL form so $$REDIS_PASSWORD interpolates at exec time.
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -57,10 +95,14 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-development}
       APP_PORT: "8080"
-      MONGO_URI: mongodb://logitrack-mongodb:27017
+      # Mongo URI carries credentials + authSource=admin so the
+      # backend authenticates as the root user against the admin
+      # database (which is where MONGO_INITDB_ROOT_USERNAME/PASSWORD
+      # provisions the principal).
+      MONGO_URI: "mongodb://${MONGO_ROOT_USERNAME:-logitrack}:${MONGO_ROOT_PASSWORD}@logitrack-mongodb:27017/?authSource=admin"
       MONGO_DB: ${MONGO_DB:-logitrack}
-      REDIS_URL: redis://logitrack-redis:6379/0
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-hex-32}
+      REDIS_URL: "redis://default:${REDIS_PASSWORD}@logitrack-redis:6379/0"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-720h}
       HTTP_CORS_ALLOWED: "http://localhost:5174,http://127.0.0.1:5174"
@@ -69,6 +111,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
       OSRM_ALLOWED_HOSTS: "router.project-osrm.org,osrm.logitrack.local"
+      OSRM_TRUCK_PROFILE: ${OSRM_TRUCK_PROFILE:-}
       AIDA_API_BASE: ${AIDA_API_BASE:-}
       LOGITRACK_IDENTITY_BACKEND: ${LOGITRACK_IDENTITY_BACKEND:-memory}
       LOGITRACK_IDENTITY_DEMO_USER: ${LOGITRACK_IDENTITY_DEMO_USER:-}
@@ -113,7 +156,7 @@ services:
       LOGITRACK_API_BASE: http://logitrack-backend:8080
       SIM_TENANT_ID: demo-tenant
       SIM_USER_ID: demo-sim
-      SIM_JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-hex-32}
+      SIM_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
       SIM_JWT_ISSUER: logitrack.it
       SIM_LOOP: "true"
       SIM_RATE_HZ: "1"

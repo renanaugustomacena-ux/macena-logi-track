@@ -35,7 +35,12 @@ log, and SLA analytics.
 ```bash
 # 1. Clone and configure
 cp .env.example .env
-# edit .env — set JWT_SECRET at minimum
+# edit .env — at minimum:
+#   - JWT_SECRET                          (openssl rand -hex 32)
+#   - MONGO_ROOT_PASSWORD                 (rotate from the dev placeholder)
+#   - REDIS_PASSWORD                      (rotate from the dev placeholder)
+#   - LOGITRACK_IDENTITY_DEMO_USER        (e.g. demo@logitrack.it)
+#   - LOGITRACK_IDENTITY_DEMO_PASSWORD    (>= 12 chars, NIST SP 800-63B)
 
 # 2. Boot the full stack
 docker compose up --build
@@ -47,8 +52,9 @@ curl -s http://localhost:8080/api/health | jq
 open http://localhost:5174
 ```
 
-The contract ports are: backend **8080**, frontend **5174**, MongoDB **27017**,
-Redis **6380** (host-mapped; container-internal Redis remains on 6379).
+The contract ports are: backend **8080**, frontend **5174**, MongoDB **27017**
+(bound to 127.0.0.1), Redis **6380** (bound to 127.0.0.1; container-internal
+Redis remains on 6379).
 
 To run only the backend locally (with MongoDB/Redis in Docker):
 
@@ -103,7 +109,7 @@ Full protocol, request/response examples and WebSocket message schema in
 
 ## Project structure
 
-```
+```text
 LogiTrack/
 ├── backend/           # Go/Gin API
 ├── frontend/          # Vue 3 + Vite SPA
@@ -113,6 +119,97 @@ LogiTrack/
 ├── docker-compose.yml
 └── .env.example
 ```
+
+---
+
+## Production hardening checklist
+
+The compose stack ships with safe-by-default-but-not-production credentials.
+Before any non-localhost deployment, walk this checklist. Every item is a
+real audit finding from the 2026-04-27 audit and has a concrete fix in this
+repository.
+
+**Secrets and credentials**
+
+- [ ] Rotate `JWT_SECRET` to a fresh 32-byte hex value (`openssl rand -hex 32`).
+      The backend refuses to boot with the documented placeholder when
+      `APP_ENV=production`.
+- [ ] Rotate `MONGO_ROOT_PASSWORD` and `REDIS_PASSWORD`. The defaults end in
+      `devonly-rotate-before-deploy` so a leaked `.env` is at least loud
+      about its provenance.
+- [ ] Rotate `LOGITRACK_IDENTITY_DEMO_PASSWORD` (or move to
+      `LOGITRACK_IDENTITY_BACKEND=disabled` and integrate the corporate IDP
+      via the `IdentityStore` interface in
+      [`backend/internal/handlers/auth.go`](backend/internal/handlers/auth.go)).
+- [ ] Inject every secret via the orchestrator's secret manager (Kubernetes
+      Secret, Docker Compose `secrets:`, AWS Secrets Manager, Vault). Plain
+      env vars are visible to every process in the container and to anyone
+      with `docker inspect`.
+
+**Network exposure**
+
+- [ ] MongoDB port `27017` and Redis port `6380` are bound to `127.0.0.1`
+      in the compose file. Confirm your production deployment has no
+      equivalent host-network exposure (i.e. only the backend talks to
+      Mongo and Redis, both reachable by service name on the internal
+      network).
+- [ ] Both Mongo and Redis now require authentication. Confirm your
+      `MONGO_URI` / `REDIS_URL` carry credentials (`mongodb://user:pass@…`
+      and `redis://default:pass@…`).
+
+**Identity backend**
+
+- [ ] In production set `LOGITRACK_IDENTITY_BACKEND=disabled` unless you
+      want every login attempt to validate against the in-memory demo
+      store. Disabled mode returns 503 with a clear pointer to the IDP
+      integration path, so a misrouted request is loud, not silent.
+
+**Italian rail integration (FERTRAM / RFI)**
+
+- [ ] If you use `LOGITRACK_RFI_*`, supply the mTLS certificate pair as
+      both `LOGITRACK_RFI_MTLS_CERT_FILE` and
+      `LOGITRACK_RFI_MTLS_KEY_FILE`. The backend refuses to boot if only
+      one of the pair is set. Optional `LOGITRACK_RFI_MTLS_CA_FILE` for
+      private CAs.
+
+**Route optimisation**
+
+- [ ] Self-host an OSRM server with a custom truck profile and set
+      `OSRM_BASE_URL` to it; add the host to `OSRM_ALLOWED_HOSTS`. The
+      public `router.project-osrm.org` has no SLA, no truck profile, and
+      sends EU customer route data to a US-hosted demo service.
+- [ ] Set `OSRM_TRUCK_PROFILE` to the profile name your OSRM server
+      exposes (e.g. `truck` or `hgv`). Without it, every truck
+      request falls back to the driving profile and ignores HGV
+      restrictions, weight limits and ZTL.
+
+**TLS and reverse proxy**
+
+- [ ] Front the SPA with a reverse proxy that terminates TLS (Caddy,
+      Cloudflare, AWS ALB, nginx-ingress). The HSTS header set in
+      [`frontend/nginx.conf`](frontend/nginx.conf) is honoured only over
+      HTTPS.
+- [ ] Tighten `Content-Security-Policy: connect-src` from `'self' ws: wss:`
+      to the specific WebSocket host once the deployment URL is known.
+      Tracked in [`docs/TECHNICAL-DEBT.md`](docs/TECHNICAL-DEBT.md).
+
+**Observability**
+
+- [ ] Wire `OTEL_EXPORTER_OTLP_ENDPOINT` to your collector. Without it,
+      tracing is a no-op (the runtime is OpenTelemetry-ready but inert).
+- [ ] Scrape `GET /metrics` into Prometheus. The endpoint is unauth-ed
+      because in production a service-mesh sidecar fronts it; if you do
+      not run a service mesh, restrict the metrics endpoint at the
+      reverse proxy layer.
+
+**Backups and operations**
+
+- [ ] Configure Mongo dumps. The compose volume `logitrack-mongo-data`
+      is the source of truth for shipments, custody chain, audit log
+      and fleet master data — all of which are append-only or
+      tamper-evident, so a backup gap directly degrades regulatory
+      claims.
+- [ ] Read [`docs/RUNBOOK.md`](docs/RUNBOOK.md) before going on-call.
 
 ---
 
