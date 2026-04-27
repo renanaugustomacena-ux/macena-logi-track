@@ -86,7 +86,12 @@ func (s *ShipmentService) CreateShipment(ctx context.Context, shp *models.Shipme
 		Actor:      models.CustodyActor{Name: "system", Role: "creator", Organisation: shp.Carrier, VATNumber: shp.Consignor.VATNumber},
 		PrevHash:   "",
 	}
-	genesis.Hash = computeHash(genesis)
+	hash, err := computeHash(genesis)
+	if err != nil {
+		s.log.Warn("genesis custody hash failed", zap.String("shipment_id", shp.ID), zap.Error(err))
+		return nil
+	}
+	genesis.Hash = hash
 	if err := s.mongo.AppendCustody(ctx, genesis); err != nil {
 		s.log.Warn("genesis custody failed", zap.String("shipment_id", shp.ID), zap.Error(err))
 	}
@@ -172,19 +177,56 @@ func (s *ShipmentService) AppendCustody(ctx context.Context, rec *models.Custody
 	if rec.RecordedAt.IsZero() {
 		rec.RecordedAt = s.clock()
 	}
-	rec.Hash = computeHash(rec)
+	hash, err := computeHash(rec)
+	if err != nil {
+		return fmt.Errorf("append custody: %w", err)
+	}
+	rec.Hash = hash
 	return s.mongo.AppendCustody(ctx, rec)
 }
 
 // computeHash returns the SHA-256 of the canonical JSON encoding of
 // the custody record minus the Hash field itself. The same algorithm
 // must be implemented by auditors verifying chain integrity.
-func computeHash(rec *models.CustodyRecord) string {
+//
+// Canonicalisation is essential because the record round-trips through
+// MongoDB, which stores time.Time as BSON Date — millisecond precision,
+// no monotonic-clock semantics, always UTC. If we hashed the
+// pre-persistence record (with arbitrary precision and the local
+// monotonic clock attached), the read-back hash would never match.
+// Every time field is therefore normalised to UTC at millisecond
+// precision before marshalling so the in-memory and post-Mongo forms
+// produce byte-identical JSON.
+func computeHash(rec *models.CustodyRecord) (string, error) {
 	copyRec := *rec
 	copyRec.Hash = ""
-	payload, _ := json.Marshal(copyRec)
+	copyRec.OccurredAt = canonicalTime(copyRec.OccurredAt)
+	copyRec.RecordedAt = canonicalTime(copyRec.RecordedAt)
+	if copyRec.Location != nil {
+		// Defensive copy of the location pointer so callers don't see
+		// any mutation. Currently no time on Location, but keeping the
+		// pattern symmetric simplifies future field additions.
+		loc := *copyRec.Location
+		copyRec.Location = &loc
+	}
+	payload, err := json.Marshal(copyRec)
+	if err != nil {
+		return "", fmt.Errorf("custody hash: marshal sequence %d: %w", rec.Sequence, err)
+	}
 	sum := sha256.Sum256(payload)
-	return hex.EncodeToString(sum[:])
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// canonicalTime is the time-normalisation rule used by computeHash.
+// It is exported only as documentation through the package — callers
+// must always go through computeHash to keep one source of truth for
+// the hash algorithm. Zero values are returned untouched so the JSON
+// encoder can emit the canonical Go zero ("0001-01-01T00:00:00Z").
+func canonicalTime(t time.Time) time.Time {
+	if t.IsZero() {
+		return t
+	}
+	return t.UTC().Truncate(time.Millisecond)
 }
 
 // VerifyChain recomputes every record's hash and confirms the PrevHash
@@ -199,7 +241,10 @@ func VerifyChain(records []models.CustodyRecord) (bool, int64, error) {
 		if r.PrevHash != prev {
 			return false, r.Sequence, fmt.Errorf("sequence %d: prev_hash mismatch", r.Sequence)
 		}
-		want := computeHash(&r)
+		want, err := computeHash(&r)
+		if err != nil {
+			return false, r.Sequence, fmt.Errorf("sequence %d: %w", r.Sequence, err)
+		}
 		if r.Hash != want {
 			return false, r.Sequence, fmt.Errorf("sequence %d: hash mismatch", r.Sequence)
 		}

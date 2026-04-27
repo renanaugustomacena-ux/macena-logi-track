@@ -11,7 +11,17 @@ import (
 // fixtures without duplicating the algorithm. It is deliberately
 // documented as "for tests" — production callers should use the
 // ShipmentService.AppendCustody path which chains the hash correctly.
-func ComputeHashForTest(r *models.CustodyRecord) string { return computeHash(r) }
+//
+// computeHash returns (string, error); a marshal error here would
+// indicate a programmer mistake (introducing an un-marshalable field
+// onto CustodyRecord), so we panic for fast feedback during tests.
+func ComputeHashForTest(r *models.CustodyRecord) string {
+	h, err := computeHash(r)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
 
 // ComputeFromForTest exposes the pure-math ETA computation path so
 // external test packages can exercise the smoother without standing up
