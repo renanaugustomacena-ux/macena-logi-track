@@ -81,14 +81,14 @@ func (c *Client) Configured() bool {
 // or any other RFI-managed intermodal facility. Only the fields
 // LogiTrack surfaces to the consignor dashboard are retained.
 type RailSlot struct {
-	ID         string    `json:"id"`
-	Terminal   string    `json:"terminal"`
-	TrainPath  string    `json:"trainPath"`
-	Departure  time.Time `json:"departure"`
-	Arrival    time.Time `json:"arrival"`
-	Capacity   int       `json:"capacity"`
-	Available  int       `json:"available"`
-	Status     string    `json:"status"` // proposed, confirmed, cancelled
+	ID        string    `json:"id"`
+	Terminal  string    `json:"terminal"`
+	TrainPath string    `json:"trainPath"`
+	Departure time.Time `json:"departure"`
+	Arrival   time.Time `json:"arrival"`
+	Capacity  int       `json:"capacity"`
+	Available int       `json:"available"`
+	Status    string    `json:"status"` // proposed, confirmed, cancelled
 }
 
 // ListAvailableSlots returns rail-slot candidates on a route for the

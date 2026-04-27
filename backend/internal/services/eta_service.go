@@ -31,13 +31,13 @@ import (
 //     when the vehicle is stationary at customs or in heavy traffic.
 //   - An upper-bound speed (DefaultMaxKPH) clips telematics noise.
 type ETAService struct {
-	mongo    *repository.MongoRepository
-	redis    *repository.RedisRepository
-	routes   RouteOptimizer
-	log      *zap.Logger
-	mu       sync.Mutex
-	filters  map[string]*speedFilter // key = shipmentID
-	clock    func() time.Time
+	mongo   *repository.MongoRepository
+	redis   *repository.RedisRepository
+	routes  RouteOptimizer
+	log     *zap.Logger
+	mu      sync.Mutex
+	filters map[string]*speedFilter // key = shipmentID
+	clock   func() time.Time
 }
 
 // Default tuning constants. Values are chosen for Italian road freight

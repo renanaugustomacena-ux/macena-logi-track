@@ -136,7 +136,7 @@ func (c *Client) FetchEvents(ctx context.Context, plate string, from, to time.Ti
 // ImportCSV parses the daily Telepass SFTP drop. The expected header
 // row is:
 //
-//   event_id,plate,transponder,gantry_id,gantry_name,occurred_at,net_cents
+//	event_id,plate,transponder,gantry_id,gantry_name,occurred_at,net_cents
 //
 // with occurred_at in RFC3339 and net_cents as a signed integer.
 // This path does NOT require REST credentials.

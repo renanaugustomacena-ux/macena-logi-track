@@ -72,13 +72,13 @@ func (c *Client) Configured() bool {
 
 // Registration is the subset of the Albo record LogiTrack surfaces.
 type Registration struct {
-	VATNumber         string    `json:"vatNumber"`
-	CompanyName       string    `json:"companyName"`
-	RegistrationNum   string    `json:"registrationNumber"`
-	Status            string    `json:"status"` // active, suspended, revoked
-	RegisteredAt      time.Time `json:"registeredAt"`
-	LastVerifiedAt    time.Time `json:"lastVerifiedAt"`
-	Capabilities      []string  `json:"capabilities,omitempty"`
+	VATNumber       string    `json:"vatNumber"`
+	CompanyName     string    `json:"companyName"`
+	RegistrationNum string    `json:"registrationNumber"`
+	Status          string    `json:"status"` // active, suspended, revoked
+	RegisteredAt    time.Time `json:"registeredAt"`
+	LastVerifiedAt  time.Time `json:"lastVerifiedAt"`
+	Capabilities    []string  `json:"capabilities,omitempty"`
 }
 
 // Verify looks up a carrier by VAT number via the REST API. Returns

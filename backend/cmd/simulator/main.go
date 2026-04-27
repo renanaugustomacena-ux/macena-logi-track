@@ -188,7 +188,7 @@ func runRoute(ctx context.Context, cfg config, client *http.Client, token string
 }
 
 type waypointBody struct {
-	RecordedAt string  `json:"recordedAt"`
+	RecordedAt string `json:"recordedAt"`
 	Position   struct {
 		Type        string    `json:"type"`
 		Coordinates []float64 `json:"coordinates"`
@@ -202,7 +202,7 @@ func postWaypoint(ctx context.Context, client *http.Client, cfg config, token, s
 	url := fmt.Sprintf("%s/api/v1/shipments/%s/waypoints", cfg.APIBase, shipmentID)
 	body := waypointBody{
 		RecordedAt: time.Now().UTC().Format(time.RFC3339Nano),
-		SpeedKph:   70 + (float64(time.Now().UnixNano()%200) - 100) / 20, // 65–75 km/h jitter
+		SpeedKph:   70 + (float64(time.Now().UnixNano()%200)-100)/20, // 65–75 km/h jitter
 		HeadingDeg: 0,
 		Source:     "simulator",
 	}

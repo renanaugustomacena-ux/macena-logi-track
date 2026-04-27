@@ -21,24 +21,24 @@ import (
 // Config represents the fully resolved runtime configuration.
 // Fields are grouped by subsystem to keep call-sites terse.
 type Config struct {
-	App         AppConfig
-	HTTP        HTTPConfig
-	Mongo       MongoConfig
-	Redis       RedisConfig
-	JWT         JWTConfig
-	Session     SessionConfig
-	OTEL        OTELConfig
-	OSRM        OSRMConfig
-	AIDA        AIDAConfig
-	RFI         RFIConfig
-	Telepass    TelepassConfig
-	Albo        AlboConfig
-	Identity    IdentityConfig
-	Kafka       KafkaConfig
-	Geofence    GeofenceConfig
-	RateLimit   RateLimitConfig
-	WebSocket   WebSocketConfig
-	Demo        DemoConfig
+	App       AppConfig
+	HTTP      HTTPConfig
+	Mongo     MongoConfig
+	Redis     RedisConfig
+	JWT       JWTConfig
+	Session   SessionConfig
+	OTEL      OTELConfig
+	OSRM      OSRMConfig
+	AIDA      AIDAConfig
+	RFI       RFIConfig
+	Telepass  TelepassConfig
+	Albo      AlboConfig
+	Identity  IdentityConfig
+	Kafka     KafkaConfig
+	Geofence  GeofenceConfig
+	RateLimit RateLimitConfig
+	WebSocket WebSocketConfig
+	Demo      DemoConfig
 }
 
 // AppConfig covers the top-level lifecycle concerns.
@@ -86,8 +86,8 @@ type JWTConfig struct {
 
 // OTELConfig configures the OpenTelemetry OTLP exporter.
 type OTELConfig struct {
-	ServiceName  string `envconfig:"OTEL_SERVICE_NAME" default:"logitrack-backend"`
-	OTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:""`
+	ServiceName  string  `envconfig:"OTEL_SERVICE_NAME" default:"logitrack-backend"`
+	OTLPEndpoint string  `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:""`
 	SampleRatio  float64 `envconfig:"OTEL_SAMPLE_RATIO" default:"0.1"`
 }
 
@@ -153,11 +153,11 @@ type AlboConfig struct {
 //     to the IDP integration path. Useful in production deployments
 //     where an external IDP is the single source of truth.
 type IdentityConfig struct {
-	Backend          string `envconfig:"LOGITRACK_IDENTITY_BACKEND" default:"memory"`
-	DemoUsername     string `envconfig:"LOGITRACK_IDENTITY_DEMO_USER" default:""`
-	DemoPassword     string `envconfig:"LOGITRACK_IDENTITY_DEMO_PASSWORD" default:""`
-	DemoTenantID     string `envconfig:"LOGITRACK_IDENTITY_DEMO_TENANT" default:"demo-tenant"`
-	DemoRoles        []string `envconfig:"LOGITRACK_IDENTITY_DEMO_ROLES" default:"operator"`
+	Backend      string   `envconfig:"LOGITRACK_IDENTITY_BACKEND" default:"memory"`
+	DemoUsername string   `envconfig:"LOGITRACK_IDENTITY_DEMO_USER" default:""`
+	DemoPassword string   `envconfig:"LOGITRACK_IDENTITY_DEMO_PASSWORD" default:""`
+	DemoTenantID string   `envconfig:"LOGITRACK_IDENTITY_DEMO_TENANT" default:"demo-tenant"`
+	DemoRoles    []string `envconfig:"LOGITRACK_IDENTITY_DEMO_ROLES" default:"operator"`
 }
 
 // KafkaConfig is a placeholder for future event-streaming roll-out.
@@ -234,7 +234,7 @@ func (c *Config) guardProductionSecrets() error {
 	}
 	for _, w := range weak {
 		if strings.EqualFold(c.JWT.Secret, w) {
-			return fmt.Errorf("config: JWT_SECRET is a known-weak placeholder (%q); " +
+			return fmt.Errorf("config: JWT_SECRET is a known-weak placeholder (%q); "+
 				"generate a 32-byte secret with `openssl rand -hex 32` and inject via secrets manager", w)
 		}
 	}

@@ -33,11 +33,11 @@ type Route struct {
 // VeronaMilano traces A4 Verona Sud → Milano Est via Brescia Est and
 // Bergamo Est.
 var VeronaMilano = Route{
-	ID:        "demo-shipment-verona-milano",
-	Reference: "CMR-VRMI-001",
-	Carrier:   "Autotrasporti del Garda Srl",
-	OriginName: "Mozzecane (VR)",
-	DestName:   "Milano Smistamento",
+	ID:          "demo-shipment-verona-milano",
+	Reference:   "CMR-VRMI-001",
+	Carrier:     "Autotrasporti del Garda Srl",
+	OriginName:  "Mozzecane (VR)",
+	DestName:    "Milano Smistamento",
 	Origin:      Waypoint{Lon: 10.793, Lat: 45.341}, // Mozzecane
 	Destination: Waypoint{Lon: 9.214, Lat: 45.450},  // Milano Lambrate
 	Polyline: []Waypoint{
@@ -61,11 +61,11 @@ var VeronaMilano = Route{
 // Shortened polyline; the simulator interpolates between adjacent
 // segments at 1 Hz.
 var VeronaNapoli = Route{
-	ID:        "demo-shipment-verona-napoli",
-	Reference: "CMR-VRNA-002",
-	Carrier:   "Trasporti Mediterraneo Spa",
-	OriginName: "Quadrante Europa (VR)",
-	DestName:   "Napoli Est Interporto",
+	ID:          "demo-shipment-verona-napoli",
+	Reference:   "CMR-VRNA-002",
+	Carrier:     "Trasporti Mediterraneo Spa",
+	OriginName:  "Quadrante Europa (VR)",
+	DestName:    "Napoli Est Interporto",
 	Origin:      Waypoint{Lon: 10.965, Lat: 45.398},
 	Destination: Waypoint{Lon: 14.356, Lat: 40.843},
 	Polyline: []Waypoint{
@@ -86,11 +86,11 @@ var VeronaNapoli = Route{
 
 // VeronaMunchen traces A22 Brennero to München via Innsbruck.
 var VeronaMunchen = Route{
-	ID:        "demo-shipment-verona-munchen",
-	Reference: "CMR-VRMU-003",
-	Carrier:   "Brennero Logistik GmbH",
-	OriginName: "Mozzecane (VR)",
-	DestName:   "München Riem Hub",
+	ID:          "demo-shipment-verona-munchen",
+	Reference:   "CMR-VRMU-003",
+	Carrier:     "Brennero Logistik GmbH",
+	OriginName:  "Mozzecane (VR)",
+	DestName:    "München Riem Hub",
 	Origin:      Waypoint{Lon: 10.793, Lat: 45.341},
 	Destination: Waypoint{Lon: 11.700, Lat: 48.140},
 	Polyline: []Waypoint{
@@ -133,11 +133,11 @@ func (r Route) ShipmentTemplate(tenantID string) *models.Shipment {
 			Name: "LogiTrack Demo Consignee", City: r.DestName, Country: countryOf(r.DestName),
 			VATNumber: "IT09876543210", Address: "Via del Terminal 1",
 		},
-		Origin:      models.NewGeoPoint(r.Origin.Lon, r.Origin.Lat),
-		Destination: models.NewGeoPoint(r.Destination.Lon, r.Destination.Lat),
+		Origin:       models.NewGeoPoint(r.Origin.Lon, r.Origin.Lat),
+		Destination:  models.NewGeoPoint(r.Destination.Lon, r.Destination.Lat),
 		VehiclePlate: demoPlateFor(r.ID),
-		ADRClass:    "",
-		ATPClass:    "",
+		ADRClass:     "",
+		ATPClass:     "",
 	}
 }
 

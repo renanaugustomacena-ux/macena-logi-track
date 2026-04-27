@@ -64,11 +64,11 @@ func (h *HealthHandler) Get(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":          overall,
-		"service":         h.cfg.App.Name,
-		"version":         h.cfg.App.Version,
-		"uptime_seconds":  int64(time.Since(h.startedAt).Seconds()),
-		"time":            time.Now().UTC().Format(time.RFC3339Nano),
-		"dependencies":    deps,
+		"status":         overall,
+		"service":        h.cfg.App.Name,
+		"version":        h.cfg.App.Version,
+		"uptime_seconds": int64(time.Since(h.startedAt).Seconds()),
+		"time":           time.Now().UTC().Format(time.RFC3339Nano),
+		"dependencies":   deps,
 	})
 }

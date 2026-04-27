@@ -25,28 +25,28 @@ import (
 //
 // Protocol (see docs/API.md for the full schema):
 //
-//   client -> server: {"op":"subscribe","shipmentId":"<id>","carriers":["<name>"]}
-//   server -> client: {"type":"event","event":{...TrackingEvent...}}
-//   server -> client: {"type":"pong"}
-//   client -> server: {"op":"ping"}
+//	client -> server: {"op":"subscribe","shipmentId":"<id>","carriers":["<name>"]}
+//	server -> client: {"type":"event","event":{...TrackingEvent...}}
+//	server -> client: {"type":"pong"}
+//	client -> server: {"op":"ping"}
 //
 // Security controls applied on the handshake (all MUST pass):
 //
-//   1. Origin check against config.WebSocket.AllowedOrigins.
-//   2. JWT validation. Browsers cannot set arbitrary headers on a WS
-//      upgrade, so the token is accepted in three places:
-//        - Authorization: Bearer <token> header (servers and CLIs)
-//        - ?access_token=<token> query parameter (legacy web clients)
-//        - Sec-WebSocket-Protocol sub-protocol list, form
-//          `logitrack.jwt.v1,<token>` (preferred browser path).
-//   3. Per-IP rate limit enforced at handshake to blunt DoS.
+//  1. Origin check against config.WebSocket.AllowedOrigins.
+//  2. JWT validation. Browsers cannot set arbitrary headers on a WS
+//     upgrade, so the token is accepted in three places:
+//     - Authorization: Bearer <token> header (servers and CLIs)
+//     - ?access_token=<token> query parameter (legacy web clients)
+//     - Sec-WebSocket-Protocol sub-protocol list, form
+//     `logitrack.jwt.v1,<token>` (preferred browser path).
+//  3. Per-IP rate limit enforced at handshake to blunt DoS.
 //
 // Runtime controls applied after upgrade:
 //
-//   4. Per-connection inbound rate limit (token bucket).
-//   5. Idle disconnect after config.WebSocket.IdleTimeout (5 minutes).
-//   6. Read-size cap of 64 KiB.
-//   7. Graceful close on hub Broadcast failures (slow-consumer drop).
+//  4. Per-connection inbound rate limit (token bucket).
+//  5. Idle disconnect after config.WebSocket.IdleTimeout (5 minutes).
+//  6. Read-size cap of 64 KiB.
+//  7. Graceful close on hub Broadcast failures (slow-consumer drop).
 type StreamHandler struct {
 	hub              *services.WebSocketHub
 	log              *zap.Logger
@@ -91,8 +91,8 @@ func NewStreamHandler(hub *services.WebSocketHub, log *zap.Logger, jwtCfg config
 			// checkOrigin is an allow-list closure built from
 			// config.WebSocket.AllowedOrigins (see above). The generic
 			// static rule cannot see through the closure, so we annotate.
-			CheckOrigin:       checkOrigin,
-			Subprotocols:      []string{wsCfg.HandshakeSub},
+			CheckOrigin:  checkOrigin,
+			Subprotocols: []string{wsCfg.HandshakeSub},
 		},
 		handshakeLimiter: newIPRateLimiter(wsCfg.RateLimitRPS, wsCfg.RateLimitBurst),
 	}

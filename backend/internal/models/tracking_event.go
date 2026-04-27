@@ -24,21 +24,21 @@ var ErrInvalidGeoPoint = errors.New("geo point must be [longitude, latitude]")
 type TrackingEventType string
 
 const (
-	EventPositionUpdate    TrackingEventType = "position_update"
-	EventDeparture         TrackingEventType = "departure"
-	EventArrival           TrackingEventType = "arrival"
-	EventGeofenceEnter     TrackingEventType = "geofence_enter"
-	EventGeofenceExit      TrackingEventType = "geofence_exit"
-	EventDelayDetected     TrackingEventType = "delay_detected"
-	EventCustomsHold       TrackingEventType = "customs_hold"
-	EventCustomsCleared    TrackingEventType = "customs_cleared"
-	EventDocumentAttached  TrackingEventType = "document_attached"
-	EventDriverAssigned    TrackingEventType = "driver_assigned"
-	EventVehicleAssigned   TrackingEventType = "vehicle_assigned"
-	EventSealBroken        TrackingEventType = "seal_broken"
-	EventTemperatureAlarm  TrackingEventType = "temperature_alarm"
-	EventHandover          TrackingEventType = "handover"
-	EventDelivery          TrackingEventType = "delivery"
+	EventPositionUpdate   TrackingEventType = "position_update"
+	EventDeparture        TrackingEventType = "departure"
+	EventArrival          TrackingEventType = "arrival"
+	EventGeofenceEnter    TrackingEventType = "geofence_enter"
+	EventGeofenceExit     TrackingEventType = "geofence_exit"
+	EventDelayDetected    TrackingEventType = "delay_detected"
+	EventCustomsHold      TrackingEventType = "customs_hold"
+	EventCustomsCleared   TrackingEventType = "customs_cleared"
+	EventDocumentAttached TrackingEventType = "document_attached"
+	EventDriverAssigned   TrackingEventType = "driver_assigned"
+	EventVehicleAssigned  TrackingEventType = "vehicle_assigned"
+	EventSealBroken       TrackingEventType = "seal_broken"
+	EventTemperatureAlarm TrackingEventType = "temperature_alarm"
+	EventHandover         TrackingEventType = "handover"
+	EventDelivery         TrackingEventType = "delivery"
 )
 
 // TrackingEvent is the unit of information that flows through the
@@ -46,20 +46,20 @@ const (
 // idempotent: consumers must be prepared to receive duplicates and
 // deduplicate on (ShipmentID, Sequence).
 type TrackingEvent struct {
-	ID          string            `bson:"_id,omitempty" json:"id"`
-	TenantID    string            `bson:"tenant_id" json:"tenantId"`
-	ShipmentID  string            `bson:"shipment_id" json:"shipmentId"`
-	Type        TrackingEventType `bson:"type" json:"type"`
-	Sequence    int64             `bson:"sequence" json:"sequence"`
-	OccurredAt  time.Time         `bson:"occurred_at" json:"occurredAt"`
-	RecordedAt  time.Time         `bson:"recorded_at" json:"recordedAt"`
-	Position    *GeoPoint         `bson:"position,omitempty" json:"position,omitempty"`
-	GeofenceID  string            `bson:"geofence_id,omitempty" json:"geofenceId,omitempty"`
-	DelaySecs   int64             `bson:"delay_secs,omitempty" json:"delaySecs,omitempty"`
-	Source      string            `bson:"source" json:"source"`
-	Actor       string            `bson:"actor,omitempty" json:"actor,omitempty"`
-	Metadata    map[string]any    `bson:"metadata,omitempty" json:"metadata,omitempty"`
-	CorrelationID string          `bson:"correlation_id,omitempty" json:"correlationId,omitempty"`
+	ID            string            `bson:"_id,omitempty" json:"id"`
+	TenantID      string            `bson:"tenant_id" json:"tenantId"`
+	ShipmentID    string            `bson:"shipment_id" json:"shipmentId"`
+	Type          TrackingEventType `bson:"type" json:"type"`
+	Sequence      int64             `bson:"sequence" json:"sequence"`
+	OccurredAt    time.Time         `bson:"occurred_at" json:"occurredAt"`
+	RecordedAt    time.Time         `bson:"recorded_at" json:"recordedAt"`
+	Position      *GeoPoint         `bson:"position,omitempty" json:"position,omitempty"`
+	GeofenceID    string            `bson:"geofence_id,omitempty" json:"geofenceId,omitempty"`
+	DelaySecs     int64             `bson:"delay_secs,omitempty" json:"delaySecs,omitempty"`
+	Source        string            `bson:"source" json:"source"`
+	Actor         string            `bson:"actor,omitempty" json:"actor,omitempty"`
+	Metadata      map[string]any    `bson:"metadata,omitempty" json:"metadata,omitempty"`
+	CorrelationID string            `bson:"correlation_id,omitempty" json:"correlationId,omitempty"`
 }
 
 // IsGeofence reports whether the event represents geofence traversal.

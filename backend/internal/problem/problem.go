@@ -2,15 +2,15 @@
 // responses. Every error returned from a LogiTrack handler must flow
 // through Emit so the wire shape is consistent:
 //
-//   {
-//     "type":     "https://logitrack.it/problems/invalid_body",
-//     "title":    "Invalid request body",
-//     "status":   400,
-//     "detail":   "field 'reference' is required",
-//     "instance": "/api/v1/shipments",
-//     "code":     "invalid_body",
-//     "traceId":  "<w3c traceparent>"
-//   }
+//	{
+//	  "type":     "https://logitrack.it/problems/invalid_body",
+//	  "title":    "Invalid request body",
+//	  "status":   400,
+//	  "detail":   "field 'reference' is required",
+//	  "instance": "/api/v1/shipments",
+//	  "code":     "invalid_body",
+//	  "traceId":  "<w3c traceparent>"
+//	}
 //
 // The `code` and `traceId` extensions are LogiTrack-specific and do
 // not violate the RFC 7807 spec (§3.2 allows extension members).

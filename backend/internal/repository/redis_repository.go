@@ -18,9 +18,9 @@ import (
 // collisions with other Redis tenants when the instance is shared.
 const (
 	ChannelTrackingEvents = "logitrack:events:tracking"
-	KeyLatestPositionTmpl = "logitrack:position:%s"       // %s = shipmentID
-	KeyRateLimitTmpl      = "logitrack:rl:%s:%s"          // %s tenant, %s bucket
-	KeyRefreshTokenTmpl   = "logitrack:rt:%s"             // %s = jti
+	KeyLatestPositionTmpl = "logitrack:position:%s" // %s = shipmentID
+	KeyRateLimitTmpl      = "logitrack:rl:%s:%s"    // %s tenant, %s bucket
+	KeyRefreshTokenTmpl   = "logitrack:rt:%s"       // %s = jti
 )
 
 // PositionTTL is how long we keep the "last known position" cache

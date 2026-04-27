@@ -76,15 +76,15 @@ func (s *ShipmentService) CreateShipment(ctx context.Context, shp *models.Shipme
 		return fmt.Errorf("create shipment: %w", err)
 	}
 	genesis := &models.CustodyRecord{
-		ID:          uuid.NewString(),
-		TenantID:    shp.TenantID,
-		ShipmentID:  shp.ID,
-		Sequence:    1,
-		Action:      models.CustodyCreated,
-		OccurredAt:  s.clock(),
-		RecordedAt:  s.clock(),
-		Actor:       models.CustodyActor{Name: "system", Role: "creator", Organisation: shp.Carrier, VATNumber: shp.Consignor.VATNumber},
-		PrevHash:    "",
+		ID:         uuid.NewString(),
+		TenantID:   shp.TenantID,
+		ShipmentID: shp.ID,
+		Sequence:   1,
+		Action:     models.CustodyCreated,
+		OccurredAt: s.clock(),
+		RecordedAt: s.clock(),
+		Actor:      models.CustodyActor{Name: "system", Role: "creator", Organisation: shp.Carrier, VATNumber: shp.Consignor.VATNumber},
+		PrevHash:   "",
 	}
 	genesis.Hash = computeHash(genesis)
 	if err := s.mongo.AppendCustody(ctx, genesis); err != nil {
