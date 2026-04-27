@@ -10,7 +10,12 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+# Strict ci: with package-lock.json now committed (HIGH-10 follow-up
+# from the 2026-04-27 audit), npm ci must succeed against the
+# lockfile. We intentionally drop the previous `|| npm install`
+# fallback so a lockfile drift fails the build loudly instead of
+# silently re-resolving every ^-ranged dependency.
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build
