@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -287,11 +288,41 @@ func subprotocolToken(header, expected string) string {
 
 // --- tiny per-IP rate limiter ----------------------------------------------
 
+// ipRateLimiter is a per-IP token-bucket limiter for the WebSocket
+// handshake path. It is safe for concurrent use.
+//
+// Two invariants the previous version got wrong:
+//
+//  1. The map was unsynchronised. With multiple WS handshakes arriving
+//     in parallel the runtime could panic on a fatal "concurrent map
+//     read and map write". The mutex below makes that impossible.
+//
+//  2. The map had no eviction. An attacker who rotates source IPs
+//     could drive memory unbounded. The lastSeen timestamp on every
+//     bucket plus a periodic sweep (every sweepInterval, removing
+//     entries idle for more than evictAfter) caps memory at the
+//     working-set size of recent peers.
 type ipRateLimiter struct {
-	rps     rate.Limit
-	burst   int
-	buckets map[string]*rate.Limiter
+	rps   rate.Limit
+	burst int
+
+	mu      sync.Mutex
+	buckets map[string]*ipBucket
 }
+
+type ipBucket struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
+const (
+	// evictAfter is how long a per-IP bucket is kept after its last
+	// observed handshake. 30 minutes is generous for a WS handshake
+	// path; legitimate clients reconnect well within this window.
+	evictAfter = 30 * time.Minute
+	// sweepInterval is how often the eviction goroutine wakes.
+	sweepInterval = 5 * time.Minute
+)
 
 func newIPRateLimiter(rps, burst int) *ipRateLimiter {
 	if rps <= 0 {
@@ -300,14 +331,63 @@ func newIPRateLimiter(rps, burst int) *ipRateLimiter {
 	if burst <= 0 {
 		burst = 40
 	}
-	return &ipRateLimiter{rps: rate.Limit(rps), burst: burst, buckets: make(map[string]*rate.Limiter)}
+	r := &ipRateLimiter{
+		rps:     rate.Limit(rps),
+		burst:   burst,
+		buckets: make(map[string]*ipBucket),
+	}
+	// Sweep goroutine is unbounded in lifetime — it lives for the
+	// process lifetime alongside the handler. That is the right shape
+	// here because there is no per-request lifecycle to bind to. A
+	// future refactor that takes a context.Context can make this
+	// cancellable, but for now the goroutine is cheap (5 minute
+	// tick, no allocations between ticks) and the StreamHandler is a
+	// process-wide singleton.
+	go r.sweepLoop()
+	return r
 }
 
 func (r *ipRateLimiter) allow(ip string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	now := time.Now()
 	b, ok := r.buckets[ip]
 	if !ok {
-		b = rate.NewLimiter(r.rps, r.burst)
+		b = &ipBucket{limiter: rate.NewLimiter(r.rps, r.burst), lastSeen: now}
 		r.buckets[ip] = b
+	} else {
+		b.lastSeen = now
 	}
-	return b.Allow()
+	return b.limiter.Allow()
+}
+
+// size returns the current number of tracked IPs. Test-visible only.
+func (r *ipRateLimiter) size() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.buckets)
+}
+
+// sweep removes buckets idle for more than evictAfter. Visible to
+// tests so they can drive eviction deterministically without sleeping
+// for sweepInterval.
+func (r *ipRateLimiter) sweep(cutoff time.Time) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	removed := 0
+	for ip, b := range r.buckets {
+		if b.lastSeen.Before(cutoff) {
+			delete(r.buckets, ip)
+			removed++
+		}
+	}
+	return removed
+}
+
+func (r *ipRateLimiter) sweepLoop() {
+	ticker := time.NewTicker(sweepInterval)
+	defer ticker.Stop()
+	for range ticker.C {
+		r.sweep(time.Now().Add(-evictAfter))
+	}
 }
