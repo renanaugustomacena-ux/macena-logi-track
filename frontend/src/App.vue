@@ -10,10 +10,19 @@
           <span class="text-xl font-semibold tracking-tight">LogiTrack</span>
           <span class="text-xs uppercase tracking-widest text-slate-200/80 hidden md:inline">Supply-Chain Visibility</span>
         </router-link>
-        <nav aria-label="Principale" class="flex gap-4 text-sm">
+        <nav aria-label="Principale" class="flex gap-4 text-sm items-center">
           <router-link to="/" class="hover:underline">Spedizioni</router-link>
-          <a href="/docs/API.md" class="hover:underline hidden md:inline">API</a>
-          <a href="/docs/ARCHITECTURE.md" class="hover:underline hidden md:inline">Architettura</a>
+          <button
+            v-if="authed"
+            type="button"
+            class="hover:underline text-slate-200/90"
+            @click="onLogout"
+          >Esci</button>
+          <router-link
+            v-else
+            to="/login"
+            class="hover:underline text-slate-200/90"
+          >Accedi</router-link>
         </nav>
       </div>
     </header>
@@ -35,4 +44,28 @@
 // App shell: top bar, routed main area, footer. Keeps the markup
 // accessible (semantic header/main/footer, named landmarks) and the
 // brand palette consistent with the landing page.
+//
+// The previous nav links to /docs/API.md and /docs/ARCHITECTURE.md
+// were removed — nginx serves dist/ only, those paths 404'd in
+// production. Replaced with a token-aware Login / Logout entry so
+// the user has an obvious way to clear session state.
+
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { clearAccessToken, hasAccessToken } from '@/lib/tokenStore';
+
+const route = useRoute();
+const router = useRouter();
+
+// route.fullPath is reactive, so this getter re-evaluates on
+// navigation — no manual subscription needed.
+const authed = computed(() => {
+  void route.fullPath;
+  return hasAccessToken();
+});
+
+function onLogout() {
+  clearAccessToken();
+  void router.replace({ name: 'login' });
+}
 </script>

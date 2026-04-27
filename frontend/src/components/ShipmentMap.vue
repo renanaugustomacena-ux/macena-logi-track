@@ -41,6 +41,7 @@
 
 import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue';
 import type { GeoPoint } from '@/stores/shipment';
+import { getAccessToken } from '@/lib/tokenStore';
 
 interface ShipmentEvent {
   shipmentId: string;
@@ -95,12 +96,11 @@ const smoothedKph = computed(() =>
   etaResult.value ? Math.round(etaResult.value.smoothedSpeedKph) : 0,
 );
 
-function tokenFromStorage(): string | null {
-  try {
-    return localStorage.getItem('lt.token');
-  } catch {
-    return null;
-  }
+// Token sourcing goes through tokenStore exclusively; no direct
+// localStorage / sessionStorage access here. See lib/tokenStore.ts
+// for the storage contract.
+function token(): string | null {
+  return getAccessToken();
 }
 
 async function initMap() {
@@ -162,25 +162,48 @@ function placeLiveMarker(map: import('leaflet').Map, pos: GeoPoint) {
   (liveMarker as import('leaflet').CircleMarker).bindPopup('Posizione attuale');
 }
 
+// Reconnect state — bounded exponential backoff with jitter so a
+// backend outage does not produce a thundering herd. Cleared on
+// onBeforeUnmount via reconnectTimer.
+let reconnectAttempts = 0;
+const reconnectMaxMs = 30_000;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleReconnect() {
+  // 1s, 2s, 4s, 8s, 16s, 30s (capped). Jitter ±20% to break the herd.
+  const base = Math.min(reconnectMaxMs, 1000 * 2 ** reconnectAttempts);
+  const jitter = base * 0.2 * (Math.random() * 2 - 1);
+  const delay = Math.max(500, base + jitter);
+  reconnectAttempts++;
+  reconnectTimer = setTimeout(connectWS, delay);
+}
+
 function connectWS() {
-  const token = tokenFromStorage();
+  const tok = token();
+  if (!tok) {
+    // Without a token we cannot subscribe. The router auth guard
+    // normally prevents this path; if we arrive here it means the
+    // token expired between map mount and WS open. Bail; the user
+    // will be redirected to /login on the next API call.
+    return;
+  }
   const wsPath = props.wsPath ?? '/api/v1/stream/tracking';
   const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const base = `${scheme}//${window.location.host}${wsPath}`;
-  const url = token ? `${base}?access_token=${encodeURIComponent(token)}` : base;
+  const url = `${scheme}//${window.location.host}${wsPath}`;
+  // Token is passed via Sec-WebSocket-Protocol exclusively. The
+  // legacy ?access_token= query-string fallback was dropped during
+  // the 2026-04-27 audit follow-up — query strings hit access logs,
+  // browser history and reverse-proxy caches.
   try {
-    if (token) {
-      socket = new WebSocket(url, ['logitrack.jwt.v1', token]);
-    } else {
-      socket = new WebSocket(url);
-    }
-  } catch (e) {
-    // SecurityError from some browsers blocking mixed schemes — fail soft.
-    // eslint-disable-next-line no-console
-    console.warn('ws connect failed', e);
+    socket = new WebSocket(url, ['logitrack.jwt.v1', tok]);
+  } catch {
+    // SecurityError from some browsers blocking mixed schemes — fail
+    // soft and try again with backoff.
+    scheduleReconnect();
     return;
   }
   socket.onopen = () => {
+    reconnectAttempts = 0;
     socket?.send(JSON.stringify({ op: 'subscribe', shipmentId: props.shipmentId }));
   };
   socket.onmessage = (ev) => {
@@ -197,17 +220,18 @@ function connectWS() {
       /* ignore malformed payload */
     }
   };
-  socket.onclose = () => {
-    // Light-touch exponential reconnect, keeping the UI responsive.
-    setTimeout(connectWS, 3000);
+  socket.onclose = (ev) => {
+    // 4xxx close codes mean auth/protocol failure — do not retry.
+    if (ev.code >= 4000 && ev.code < 5000) return;
+    scheduleReconnect();
   };
 }
 
 async function refreshETA() {
-  const token = tokenFromStorage();
+  const tok = token();
   try {
     const res = await fetch(`/api/v1/shipments/${props.shipmentId}/eta`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (!res.ok) return;
     etaResult.value = (await res.json()) as ETAResult;
@@ -230,6 +254,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (etaTimer) clearInterval(etaTimer);
+  if (reconnectTimer) clearTimeout(reconnectTimer);
   socket?.close();
   (mapInstance as { remove?: () => void } | null)?.remove?.();
 });

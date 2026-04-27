@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { api } from '@/api/client';
+import { api, Unauthorized } from '@/api/client';
 
 export type ShipmentMode = 'road' | 'rail' | 'multimodal' | 'sea' | 'air';
 export type ShipmentStatus =
@@ -71,10 +71,26 @@ export const useShipmentStore = defineStore('shipments', {
       this.loading = true;
       this.error = null;
       try {
-        const data = await api.get<ListResponse>('/shipments', this.filters as Record<string, string>);
+        // Build the query object explicitly with typed values so a
+        // future non-string field cannot slip through the
+        // Record<string,string> cast.
+        const q: Record<string, string> = {};
+        if (this.filters.status) q.status = this.filters.status;
+        if (this.filters.carrier) q.carrier = this.filters.carrier;
+        if (this.filters.from) q.from = this.filters.from;
+        if (this.filters.to) q.to = this.filters.to;
+        const data = await api.get<ListResponse>('/shipments', q);
         this.items = data.items ?? [];
       } catch (err) {
-        this.error = (err as { detail?: string; code?: string }).detail ?? 'errore_di_rete';
+        if (err instanceof Unauthorized) {
+          // The router guard will handle redirection on the next
+          // navigation; we leave error empty so the home view does
+          // not flash a red banner during the redirect.
+          this.items = [];
+          this.error = null;
+        } else {
+          this.error = (err as { detail?: string; code?: string }).detail ?? 'Errore di rete.';
+        }
       } finally {
         this.loading = false;
       }
@@ -85,8 +101,13 @@ export const useShipmentStore = defineStore('shipments', {
       try {
         this.selected = await api.get<Shipment>(`/shipments/${id}`);
       } catch (err) {
-        this.error = (err as { detail?: string; code?: string }).detail ?? 'errore_di_rete';
-        this.selected = null;
+        if (err instanceof Unauthorized) {
+          this.selected = null;
+          this.error = null;
+        } else {
+          this.error = (err as { detail?: string; code?: string }).detail ?? 'Errore di rete.';
+          this.selected = null;
+        }
       } finally {
         this.loading = false;
       }
