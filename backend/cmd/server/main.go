@@ -172,13 +172,21 @@ func run() error {
 	// operator instead of silently fabricating data. This closes
 	// H-01 .. H-04 from LogiTrack-GAPS.md.
 	aidaClient := aida.New(aida.Config{BaseURL: cfg.AIDA.BaseURL, APIKey: cfg.AIDA.APIKey})
-	rfiClient := rfi.New(rfi.Config{
+	rfiClient, err := rfi.New(rfi.Config{
 		BaseURL:      cfg.RFI.BaseURL,
 		ClientID:     cfg.RFI.ClientID,
 		ClientSecret: cfg.RFI.ClientSecret,
 		MTLSCertFile: cfg.RFI.MTLSCertFile,
 		MTLSKeyFile:  cfg.RFI.MTLSKeyFile,
+		MTLSCAFile:   cfg.RFI.MTLSCAFile,
 	})
+	if err != nil {
+		// mTLS misconfiguration is a hard boot failure: the alternative
+		// is silently falling back to plain TLS and producing a
+		// confusing 403 from FERTRAM later. Fail-fast at boot so the
+		// operator notices.
+		return fmt.Errorf("rfi client init: %w", err)
+	}
 	telepassClient := telepass.New(telepass.Config{
 		BaseURL:    cfg.Telepass.BaseURL,
 		APIKey:     cfg.Telepass.APIKey,

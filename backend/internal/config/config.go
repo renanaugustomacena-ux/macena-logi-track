@@ -131,12 +131,22 @@ type AIDAConfig struct {
 }
 
 // RFIConfig references the FERTRAM/RFI intermodal rail-slot API.
+//
+// FERTRAM is mTLS-protected in production. MTLSCertFile / MTLSKeyFile
+// are the PEM-encoded client certificate and private key issued by
+// RFI to the operator. They must be supplied as a pair: providing
+// only one is a construction-time error so the operator does not
+// chase a confusing 403 from FERTRAM. MTLSCAFile is optional and
+// defaults to the system root pool (which trusts the publicly-signed
+// fertram.rfi.it certificate); set it to a private CA bundle when
+// FERTRAM presents a private/test certificate.
 type RFIConfig struct {
 	BaseURL      string `envconfig:"LOGITRACK_RFI_API_BASE" default:""`
 	ClientID     string `envconfig:"LOGITRACK_RFI_CLIENT_ID" default:""`
 	ClientSecret string `envconfig:"LOGITRACK_RFI_CLIENT_SECRET" default:""`
 	MTLSCertFile string `envconfig:"LOGITRACK_RFI_MTLS_CERT_FILE" default:""`
 	MTLSKeyFile  string `envconfig:"LOGITRACK_RFI_MTLS_KEY_FILE" default:""`
+	MTLSCAFile   string `envconfig:"LOGITRACK_RFI_MTLS_CA_FILE" default:""`
 }
 
 // TelepassConfig references the ViaCard/Telepass Business API.
