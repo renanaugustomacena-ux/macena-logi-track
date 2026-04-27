@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -278,6 +279,48 @@ func buildLogger(cfg *config.Config) (*zap.Logger, error) {
 		)), nil
 	}
 	return zap.NewDevelopment()
+}
+
+// buildIdentityStore selects an IdentityStore implementation based on
+// LOGITRACK_IDENTITY_BACKEND. The contract:
+//
+//   - "memory" (default): seed an InMemoryIdentityStore with a single
+//     demo user from LOGITRACK_IDENTITY_DEMO_{USER,PASSWORD,TENANT,ROLES}.
+//     If either user or password is empty, the store is nil — every
+//     login returns 503 with the "configure your IDP" pointer. Mirrors
+//     the "disabled" branch but without forcing operators to set a
+//     second env var to silence the demo seed.
+//   - "disabled": return nil so /api/v1/auth/login returns 503.
+//   - anything else: typed error so the operator notices a typo at boot.
+//
+// Production deployments are expected to replace this composition with
+// an adapter to the corporate IDP (Azure AD, Keycloak, Okta) — the
+// IdentityStore interface in handlers/auth.go is the seam.
+func buildIdentityStore(cfg config.IdentityConfig) (handlers.IdentityStore, error) {
+	backend := strings.ToLower(strings.TrimSpace(cfg.Backend))
+	switch backend {
+	case "disabled":
+		return nil, nil
+	case "", "memory":
+		if cfg.DemoUsername == "" || cfg.DemoPassword == "" {
+			return nil, nil
+		}
+		users := map[string]handlers.UserSeed{
+			cfg.DemoUsername: {
+				Password: cfg.DemoPassword,
+				TenantID: cfg.DemoTenantID,
+				UserID:   cfg.DemoUsername,
+				Roles:    cfg.DemoRoles,
+			},
+		}
+		store, err := handlers.NewInMemoryIdentityStore(users, 5, 15*time.Minute)
+		if err != nil {
+			return nil, fmt.Errorf("identity store seed: %w", err)
+		}
+		return store, nil
+	default:
+		return nil, fmt.Errorf("unsupported LOGITRACK_IDENTITY_BACKEND %q (allowed: memory, disabled)", cfg.Backend)
+	}
 }
 
 // initTracer configures an OTLP exporter if OTEL_EXPORTER_OTLP_ENDPOINT

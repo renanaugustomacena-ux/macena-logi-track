@@ -70,7 +70,13 @@ services:
       OSRM_BASE_URL: ${OSRM_BASE_URL:-https://router.project-osrm.org}
       OSRM_ALLOWED_HOSTS: "router.project-osrm.org,osrm.logitrack.local"
       AIDA_API_BASE: ${AIDA_API_BASE:-}
+      LOGITRACK_IDENTITY_BACKEND: ${LOGITRACK_IDENTITY_BACKEND:-memory}
+      LOGITRACK_IDENTITY_DEMO_USER: ${LOGITRACK_IDENTITY_DEMO_USER:-}
+      LOGITRACK_IDENTITY_DEMO_PASSWORD: ${LOGITRACK_IDENTITY_DEMO_PASSWORD:-}
+      LOGITRACK_IDENTITY_DEMO_TENANT: ${LOGITRACK_IDENTITY_DEMO_TENANT:-demo-tenant}
+      LOGITRACK_IDENTITY_DEMO_ROLES: ${LOGITRACK_IDENTITY_DEMO_ROLES:-operator}
       SEED_DEMO: "true"
+      SEED_DEMO_TENANT: ${SEED_DEMO_TENANT:-demo-tenant}
     ports:
       - "8080:8080"
     # Distroless runtime has no shell/wget; the backend exposes /api/health
