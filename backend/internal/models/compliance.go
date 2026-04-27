@@ -8,23 +8,35 @@ import (
 
 // Italian plate validators.
 //
-// The 1994 Codice della Strada (D.Lgs. 285/1992 art. 100) introduced
-// the current two-letter + three-digit + two-letter format (e.g.
-// "AB123CD"). Historical plates — still legal on "vintage" vehicles
-// registered before 1994 — follow the older province-prefixed shape
-// (e.g. "VR-123456", "MI-ABC-123"). We accept both because carriers
-// still operate rebuilt Fiat 242 vans for specialised routes.
+// The post-1994 format (e.g. "AB123CD") was introduced by the
+// Decreto Ministeriale 27 aprile 1994 and was operational from
+// 18 February 1994 onward. The DM 27/04/1994 art. 2 specifies the
+// alphabet for the four letter positions and explicitly excludes
+// the letters I, O, Q and U because they are visually confusable
+// with the digits 1, 0, 0, and the letter V respectively. Historical
+// plates — still legal on "vintage" vehicles registered before
+// 1994 — follow the older province-prefixed shape (e.g. "VR-123456",
+// "MI-ABC-123"). We accept both because carriers still operate
+// rebuilt Fiat 242 vans for specialised routes.
 //
 // References:
-//   - D.Lgs. 30 aprile 1992, n. 285 (Codice della Strada), art. 100.
-//   - Decreto Ministeriale 20 maggio 1992 — formato targhe.
+//   - D.Lgs. 30 aprile 1992, n. 285 (Codice della Strada), art. 100
+//     — general plate visibility / readability requirements.
+//   - DPR 16 dicembre 1992, n. 495 (Regolamento di esecuzione del
+//     Codice della Strada) — implementing regulation.
+//   - Decreto Ministeriale 27 aprile 1994 — formato delle targhe
+//     post-1994 e alfabeto ammesso (esclude I, O, Q, U).
 //   - ACI circolare 17/2003.
 //
 // Historical plates use a province prefix (MI, VR, TO, ...) followed by
 // a hyphen or space and a sequence of 4–6 digits/letters. We require
 // the explicit separator so shorter inputs like "AB12CD" do not match.
+//
+// The post-1994 character class is split into [A-H] ∪ [J-N] ∪ [P] ∪
+// [R-T] ∪ [V-Z]. Letters excluded: I (between H and J), O (between N
+// and P), Q (between P and R), U (between T and V).
 var (
-	platePost1994 = regexp.MustCompile(`^[A-HJ-NPR-Z]{2}[0-9]{3}[A-HJ-NPR-Z]{2}$`)
+	platePost1994 = regexp.MustCompile(`^[A-HJ-NPR-TV-Z]{2}[0-9]{3}[A-HJ-NPR-TV-Z]{2}$`)
 	plateHistoric = regexp.MustCompile(`^[A-Z]{2}[-\s][0-9A-Z]{4,6}$`)
 )
 
