@@ -96,11 +96,20 @@ type OTELConfig struct {
 // AllowedHosts is the SSRF guard: outbound OSRM calls are rejected
 // unless the host in BaseURL (or any configured override) is on the
 // allow-list. See internal/services/route_optimizer.go for the check.
+//
+// TruckProfile names the OSRM profile to use when a request asks for
+// vehicle="truck". The public OSRM service ships only the "driving"
+// profile; production deployments serve a custom truck profile (e.g.
+// "truck" or "hgv") with weight, height, hazardous-goods and ZTL
+// awareness. When TruckProfile is empty, the optimiser falls back to
+// the "driving" profile and emits a one-shot WARN so the operator
+// knows the route plan ignores HGV restrictions.
 type OSRMConfig struct {
 	BaseURL      string        `envconfig:"OSRM_BASE_URL" default:"https://router.project-osrm.org"`
 	Timeout      time.Duration `envconfig:"OSRM_TIMEOUT" default:"5s"`
 	AllowedHosts []string      `envconfig:"OSRM_ALLOWED_HOSTS" default:"router.project-osrm.org,osrm.logitrack.local"`
 	CacheSize    int           `envconfig:"OSRM_CACHE_SIZE" default:"1000"`
+	TruckProfile string        `envconfig:"OSRM_TRUCK_PROFILE" default:""`
 }
 
 // SessionConfig enforces the v2.0 §12 session-timeout rules:

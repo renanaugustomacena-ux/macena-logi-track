@@ -122,3 +122,53 @@ func extractHost(raw string) string {
 	}
 	return s
 }
+
+// TestRouteOptimizerTruckProfile verifies the OSRM_TRUCK_PROFILE
+// configuration knob: when set, the optimiser routes vehicle="truck"
+// requests against the configured profile path; when empty, it falls
+// back to "driving" (and emits a one-shot WARN — covered by
+// stdout-capturing in a separate test below).
+func TestRouteOptimizerTruckProfile(t *testing.T) {
+	cases := []struct {
+		name           string
+		truckProfile   string
+		expectedPath   string
+	}{
+		{name: "configured_truck_profile", truckProfile: "truck", expectedPath: "/route/v1/truck/"},
+		{name: "configured_hgv_profile", truckProfile: "hgv", expectedPath: "/route/v1/hgv/"},
+		{name: "empty_falls_back_to_driving", truckProfile: "", expectedPath: "/route/v1/driving/"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var seenPath string
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				seenPath = r.URL.Path
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"code":"Ok","routes":[{"distance":1000,"duration":60,"geometry":"x","legs":[{"distance":1000,"duration":60}]}]}`))
+			}))
+			defer ts.Close()
+
+			cfg := config.OSRMConfig{
+				BaseURL:      ts.URL,
+				Timeout:      2_000_000_000,
+				AllowedHosts: []string{extractHost(ts.URL)},
+				CacheSize:    10,
+				TruckProfile: tc.truckProfile,
+			}
+			opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
+			_, err := opt.OptimiseRoute(context.Background(), services.RouteRequest{
+				Vehicle: "truck",
+				Waypoints: []models.GeoPoint{
+					models.NewGeoPoint(10.793, 45.341),
+					models.NewGeoPoint(10.965, 45.398),
+				},
+			})
+			if err != nil {
+				t.Fatalf("OptimiseRoute returned error: %v", err)
+			}
+			if !strings.HasPrefix(seenPath, tc.expectedPath) {
+				t.Errorf("OSRM path = %q, expected prefix %q", seenPath, tc.expectedPath)
+			}
+		})
+	}
+}

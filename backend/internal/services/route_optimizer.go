@@ -64,10 +64,11 @@ var ErrOSRMHostNotAllowed = errors.New("osrm: host not in allow-list")
 
 // OSRMOptimizer is the default production implementation.
 type OSRMOptimizer struct {
-	cfg    config.OSRMConfig
-	client *http.Client
-	log    *zap.Logger
-	cache  *lruCache
+	cfg               config.OSRMConfig
+	client            *http.Client
+	log               *zap.Logger
+	cache             *lruCache
+	truckDowngradeWarn sync.Once
 }
 
 // NewOSRMOptimizer wires a RouteOptimizer backed by an OSRM server.
@@ -175,9 +176,22 @@ func (o *OSRMOptimizer) callOSRM(ctx context.Context, base *url.URL, req RouteRe
 	}
 	profile := "driving"
 	if req.Vehicle == "truck" {
-		// OSRM does not ship a truck profile by default. A production
-		// deployment serves a custom truck profile at /route/v1/truck.
-		profile = "driving"
+		// Production deployments serve a custom truck profile (e.g.
+		// "truck" or "hgv") with weight, height, hazardous-goods and
+		// ZTL awareness. The public OSRM service ships only "driving",
+		// and the truck profile is opt-in via OSRM_TRUCK_PROFILE.
+		if o.cfg.TruckProfile != "" {
+			profile = o.cfg.TruckProfile
+		} else {
+			// One-shot WARN per process: silently downgrading every
+			// truck request would hide the fact that the route plan
+			// ignores HGV restrictions.
+			o.truckDowngradeWarn.Do(func() {
+				o.log.Warn("osrm: vehicle=truck requested but OSRM_TRUCK_PROFILE is not set; falling back to driving profile (HGV restrictions, weight limits, hazardous-goods rules will be ignored). Configure a custom OSRM truck profile to silence this.",
+					zap.String("base_url", o.cfg.BaseURL),
+				)
+			})
+		}
 	}
 	ref := *base
 	ref.Path = fmt.Sprintf("/route/v1/%s/%s", profile, strings.Join(parts, ";"))
