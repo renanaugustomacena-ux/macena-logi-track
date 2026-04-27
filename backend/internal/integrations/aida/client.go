@@ -22,6 +22,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/logitrack/backend/internal/integrations/httpretry"
 )
 
 // ErrNotConfigured is returned when the AIDA integration is invoked
@@ -107,13 +109,15 @@ func (c *Client) LookupMRN(ctx context.Context, mrn string) (*DeclarationStatus,
 	if err != nil {
 		return nil, fmt.Errorf("integrations/aida: build url: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
-	req.Header.Set("Accept", "application/json")
-	resp, err := c.http.Do(req)
+	resp, err := httpretry.Do(ctx, func() (*http.Response, error) {
+		req, rerr := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if rerr != nil {
+			return nil, rerr
+		}
+		req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
+		req.Header.Set("Accept", "application/json")
+		return c.http.Do(req)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("integrations/aida: http: %w", err)
 	}

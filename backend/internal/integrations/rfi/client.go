@@ -21,6 +21,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/logitrack/backend/internal/integrations/httpretry"
 )
 
 // ErrNotConfigured is returned when the RFI/FERTRAM integration is
@@ -107,14 +109,16 @@ func (c *Client) ListAvailableSlots(ctx context.Context, from, to string, after 
 		return nil, fmt.Errorf("integrations/rfi: build url: %w", err)
 	}
 	endpoint += "?" + q.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-Client-Id", c.cfg.ClientID)
-	req.Header.Set("X-Client-Secret", c.cfg.ClientSecret)
-	req.Header.Set("Accept", "application/json")
-	resp, err := c.http.Do(req)
+	resp, err := httpretry.Do(ctx, func() (*http.Response, error) {
+		req, rerr := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if rerr != nil {
+			return nil, rerr
+		}
+		req.Header.Set("X-Client-Id", c.cfg.ClientID)
+		req.Header.Set("X-Client-Secret", c.cfg.ClientSecret)
+		req.Header.Set("Accept", "application/json")
+		return c.http.Do(req)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("integrations/rfi: http: %w", err)
 	}

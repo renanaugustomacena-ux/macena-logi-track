@@ -27,6 +27,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/logitrack/backend/internal/integrations/httpretry"
 )
 
 // ErrNotConfigured is returned from REST calls when the Telepass
@@ -108,13 +110,15 @@ func (c *Client) FetchEvents(ctx context.Context, plate string, from, to time.Ti
 	q.Set("from", from.UTC().Format(time.RFC3339))
 	q.Set("to", to.UTC().Format(time.RFC3339))
 	endpoint += "?" + q.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
-	req.Header.Set("Accept", "application/json")
-	resp, err := c.http.Do(req)
+	resp, err := httpretry.Do(ctx, func() (*http.Response, error) {
+		req, rerr := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if rerr != nil {
+			return nil, rerr
+		}
+		req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
+		req.Header.Set("Accept", "application/json")
+		return c.http.Do(req)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("integrations/telepass: http: %w", err)
 	}

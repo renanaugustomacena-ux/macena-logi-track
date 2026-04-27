@@ -23,6 +23,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/logitrack/backend/internal/integrations/httpretry"
 )
 
 // ErrNotConfigured names the env variables an operator must set.
@@ -94,13 +96,15 @@ func (c *Client) Verify(ctx context.Context, vatNumber string) (*Registration, e
 	if err != nil {
 		return nil, fmt.Errorf("integrations/albo: build url: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-API-Key", c.cfg.APIKey)
-	req.Header.Set("Accept", "application/json")
-	resp, err := c.http.Do(req)
+	resp, err := httpretry.Do(ctx, func() (*http.Response, error) {
+		req, rerr := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if rerr != nil {
+			return nil, rerr
+		}
+		req.Header.Set("X-API-Key", c.cfg.APIKey)
+		req.Header.Set("Accept", "application/json")
+		return c.http.Do(req)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("integrations/albo: http: %w", err)
 	}
