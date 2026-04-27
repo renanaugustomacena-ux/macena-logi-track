@@ -24,7 +24,7 @@
 
     <footer class="bg-slate-900 text-slate-300 text-sm">
       <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between gap-2">
-        <p>LogiTrack Contributors - Mozzecane (VR) - P.IVA 00000000000</p>
+        <p>LogiTrack - Mozzecane (VR) - P.IVA 00000000000</p>
         <p>Made in Verona - Corridoio del Brennero</p>
       </div>
     </footer>
