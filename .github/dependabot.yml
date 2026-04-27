@@ -1,0 +1,61 @@
+version: 2
+
+# Dependabot keeps every dependency surface fresh while branch
+# protection ensures human review before merge. Promotion to
+# commit-SHA pinning for GitHub Actions is tracked as a Mission III
+# follow-up; today the workflow files use specific minor/patch tags
+# (e.g. actions/checkout@v4.1.7) and Dependabot opens a PR each week
+# when an upstream releases a new version.
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, ci]
+
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, backend]
+    groups:
+      otel:
+        patterns: ["go.opentelemetry.io/*"]
+      gin:
+        patterns: ["github.com/gin-gonic/*", "github.com/gin-contrib/*"]
+      mongo:
+        patterns: ["go.mongodb.org/*"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, frontend]
+    groups:
+      vue:
+        patterns: ["vue", "vue-router", "pinia", "@vitejs/*"]
+      build-tools:
+        patterns: ["vite", "vitest", "vue-tsc", "typescript", "tailwindcss", "postcss", "autoprefixer"]
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, docker]
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, docker]

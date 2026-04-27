@@ -1,5 +1,14 @@
 name: CI Pipeline
 
+# Action version policy:
+#   First-party (actions/*): pinned to a specific minor or patch tag.
+#     Major-version floats (`@v4`) are deliberately avoided because
+#     they are mutable; a compromised maintainer could re-point them.
+#   Third-party actions: pinned to a specific minor or patch tag.
+#     Renovate / Dependabot manages updates (.github/dependabot.yml).
+#     Promotion to commit-SHA pinning is tracked in TECHNICAL-DEBT.md
+#     and conditional on the Mission III security baseline.
+
 on:
   push:
     branches: [main, develop]
@@ -23,33 +32,50 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-go@v5.0.2
         with:
           go-version: "1.26"
           cache-dependency-path: backend/go.sum
+      - name: gofmt (must be clean)
+        run: |
+          changed=$(gofmt -l .)
+          if [ -n "$changed" ]; then
+            echo "::error::gofmt drift detected; run 'gofmt -w .' on:"
+            echo "$changed"
+            exit 1
+          fi
       - name: go vet
         run: go vet ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v6.1.1
         with:
           version: v1.60
           working-directory: backend
           args: --timeout=5m
 
   backend-test:
-    name: Backend · Test (race + cover)
+    name: Backend · Test (race + cover, 80% gate)
     runs-on: ubuntu-latest
     needs: backend-lint
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-go@v5.0.2
         with:
           go-version: "1.26"
           cache-dependency-path: backend/go.sum
-      - run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
-      - uses: actions/upload-artifact@v4
+      - name: Test with coverage
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Coverage gate (>= 80% per CLAUDE.md testing rule)
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%",""); print $3}')
+          echo "Total coverage: ${total}%"
+          awk -v c="$total" -v m=80 'BEGIN { exit !(c+0 >= m) }' || {
+            echo "::error::coverage ${total}% is below the 80% gate"
+            exit 1
+          }
+      - uses: actions/upload-artifact@v4.4.0
         with:
           name: backend-coverage
           path: backend/coverage.out
@@ -60,34 +86,41 @@ jobs:
     needs: backend-test
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-go@v5.0.2
         with:
           go-version: "1.26"
           cache-dependency-path: backend/go.sum
       - run: go build -trimpath -o bin/logitrack-server ./cmd/server
 
   backend-docker:
-    name: Backend · Docker
+    name: Backend · Docker + Trivy (HIGH/CRIT block)
     runs-on: ubuntu-latest
     needs: backend-build
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v4.1.7
+      - uses: docker/setup-buildx-action@v3.6.1
       - name: Build image
         run: |
           docker build \
             --tag logitrack/backend:${{ github.sha }} \
             --tag logitrack/backend:${{ github.ref_name }} \
             ./backend
-      - name: Trivy scan
+      - name: Trivy scan (fail on HIGH/CRITICAL)
         uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: logitrack/backend:${{ github.sha }}
           format: sarif
           output: backend-trivy.sarif
           severity: CRITICAL,HIGH
-          exit-code: "0"
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Upload Trivy SARIF to Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3.26.6
+        with:
+          sarif_file: backend-trivy.sarif
+          category: trivy-backend
 
   # -------------------------------------------------------------------------
   # Frontend (Vue 3 / Vite)
@@ -97,8 +130,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-node@v4.0.4
         with:
           node-version: "22"
           cache: npm
@@ -113,8 +146,8 @@ jobs:
     needs: frontend-lint
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-node@v4.0.4
         with:
           node-version: "22"
           cache: npm
@@ -122,14 +155,29 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run test --if-present -- --run
 
+  frontend-audit:
+    name: Frontend · npm audit (HIGH/CRIT block)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-node@v4.0.4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
+
   frontend-build:
     name: Frontend · Build
     runs-on: ubuntu-latest
-    needs: frontend-test
+    needs: [frontend-test, frontend-audit]
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4.1.7
+      - uses: actions/setup-node@v4.0.4
         with:
           node-version: "22"
           cache: npm
@@ -144,18 +192,20 @@ jobs:
     name: Security · SAST / Secrets / Deps
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
         with: { fetch-depth: 0 }
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v2.3.7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Semgrep
-        uses: returntocorp/semgrep-action@v1
+        # Org renamed from `returntocorp` to `semgrep` in 2024 — old
+        # path is deprecated and may stop receiving updates.
+        uses: semgrep/semgrep-action@v1
         with:
           config: p/ci
       - name: govulncheck
-        uses: golang/govulncheck-action@v1
+        uses: golang/govulncheck-action@v1.0.4
         with:
           go-version-input: "1.26"
           work-dir: backend
@@ -167,8 +217,37 @@ jobs:
     name: Landing page · HTML validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: HTML5 validator
         uses: Cyb3r-Jak3/html5validator-action@v7.2.0
         with:
           root: landing-page/
+
+  # -------------------------------------------------------------------------
+  # Quality gate — single required check that aggregates every other
+  # job, so branch protection rules need to track exactly one check.
+  # -------------------------------------------------------------------------
+  quality-gate:
+    name: Quality Gate (required)
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - backend-lint
+      - backend-test
+      - backend-build
+      - backend-docker
+      - frontend-lint
+      - frontend-test
+      - frontend-audit
+      - frontend-build
+      - security
+      - landing-page
+    steps:
+      - name: Aggregate
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ] || \
+             [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::one or more upstream jobs failed or were cancelled"
+            exit 1
+          fi
+          echo "all upstream jobs succeeded"

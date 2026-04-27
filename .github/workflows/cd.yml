@@ -1,5 +1,16 @@
 name: CD Pipeline
 
+# This workflow currently lands two real outputs:
+#   1. Backend + frontend container images pushed to GHCR (build-push job).
+#   2. Release notes generated on a v* tag (release job).
+#
+# The deploy-staging, integration-tests, deploy-production and notify
+# jobs are *placeholders* — they only echo the commands that a real
+# deployment would run. Until those steps are wired to a real cluster
+# they are gated behind `if: false` so they cannot land a misleading
+# "deployed" status. Re-enable them only when the kubectl/helm/playwright
+# commands are real.
+
 on:
   push:
     branches: [main]
@@ -12,6 +23,9 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  # id-token is reserved for future cloud-OIDC auth (AWS/GCP/Azure).
+  # Currently unused; left in scope so the eventual deploy step does
+  # not need a separate workflow edit at the moment of cut-over.
   id-token: write
 
 env:
@@ -24,17 +38,17 @@ jobs:
     name: Build & push container images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v4.1.7
+      - uses: docker/setup-buildx-action@v3.6.1
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.3.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.5.1
         with:
           images: ${{ env.IMAGE_BACKEND }}
           tags: |
@@ -42,7 +56,7 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
       - name: Build & push backend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: ./backend
           push: true
@@ -51,7 +65,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build & push frontend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: ./frontend
           push: true
@@ -61,38 +75,48 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # -------------------------------------------------------------------------
+  # PLACEHOLDER STAGES — disabled until they are wired to real targets.
+  #
+  # When you re-enable any of these, replace the echo commands with the
+  # real kubectl/helm/playwright invocation, set if: ${{ … }} to your
+  # gating condition (or remove the if: false), and update RUNBOOK.md
+  # so on-call understands the new deploy path.
+  # -------------------------------------------------------------------------
+
   deploy-staging:
-    name: Deploy · staging
+    name: Deploy · staging (placeholder, disabled)
+    if: false
     runs-on: ubuntu-latest
     needs: build-push
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Apply Kubernetes manifests (placeholder)
-        run: |
-          echo "kubectl apply -f k8s/staging/ -n logitrack-staging"
+        run: echo "kubectl apply -f k8s/staging/ -n logitrack-staging"
       - name: Smoke test /api/health
-        run: |
-          echo "curl -sf https://staging.logitrack.it/api/health"
+        run: echo "curl -sf https://staging.logitrack.it/api/health"
 
   integration-tests:
-    name: Integration · Playwright
+    name: Integration · Playwright (placeholder, disabled)
+    if: false
     runs-on: ubuntu-latest
     needs: deploy-staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Run Playwright suite (placeholder)
         run: echo "npx playwright test --config tests/e2e/playwright.config.ts"
 
   deploy-production:
-    name: Deploy · production (manual approval)
+    name: Deploy · production (placeholder, disabled)
+    if: false
     runs-on: ubuntu-latest
     needs: integration-tests
     environment:
       name: production
       url: https://app.logitrack.it
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Blue-green rollout (placeholder)
         run: echo "kubectl apply -f k8s/production/ && kubectl rollout status deploy/logitrack-backend"
       - name: Health check
@@ -101,23 +125,23 @@ jobs:
   release:
     name: Release notes
     runs-on: ubuntu-latest
-    needs: deploy-production
+    needs: build-push
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
         with: { fetch-depth: 0 }
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.0.8
         with:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify:
-    name: Notify
+    name: Notify (placeholder, disabled)
+    if: false
     runs-on: ubuntu-latest
-    needs: deploy-production
-    if: always()
+    needs: build-push
     steps:
       - name: Slack webhook (placeholder)
         run: echo "Slack notification placeholder"
