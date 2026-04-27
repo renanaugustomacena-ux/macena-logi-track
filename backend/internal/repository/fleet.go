@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,9 +15,13 @@ import (
 
 // --- Vehicles ----------------------------------------------------------
 
-// InsertVehicle persists a new vehicle. CreatedAt/UpdatedAt are set here
-// so callers don't have to remember.
+// InsertVehicle persists a new vehicle. CreatedAt/UpdatedAt and the
+// document id are stamped here so callers don't have to remember and
+// so the response carries the assigned id back to the client.
 func (r *MongoRepository) InsertVehicle(ctx context.Context, v *models.Vehicle) error {
+	if v.ID == "" {
+		v.ID = uuid.NewString()
+	}
 	now := time.Now().UTC()
 	if v.CreatedAt.IsZero() {
 		v.CreatedAt = now
@@ -68,8 +73,12 @@ func (r *MongoRepository) ListVehicles(ctx context.Context, tenantID string, act
 
 // --- Drivers -----------------------------------------------------------
 
-// InsertDriver persists a new driver.
+// InsertDriver persists a new driver. ID is generated when blank so
+// the response carries the assigned identifier back to the caller.
 func (r *MongoRepository) InsertDriver(ctx context.Context, d *models.Driver) error {
+	if d.ID == "" {
+		d.ID = uuid.NewString()
+	}
 	now := time.Now().UTC()
 	if d.CreatedAt.IsZero() {
 		d.CreatedAt = now
@@ -119,8 +128,13 @@ func (r *MongoRepository) ListDrivers(ctx context.Context, tenantID string, acti
 
 // --- Geofences ---------------------------------------------------------
 
-// InsertGeofence persists a new geofence polygon.
+// InsertGeofence persists a new geofence polygon. ID is generated
+// when blank so the response carries the assigned identifier back
+// to the caller.
 func (r *MongoRepository) InsertGeofence(ctx context.Context, g *models.Geofence) error {
+	if g.ID == "" {
+		g.ID = uuid.NewString()
+	}
 	now := time.Now().UTC()
 	if g.CreatedAt.IsZero() {
 		g.CreatedAt = now
