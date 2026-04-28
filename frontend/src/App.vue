@@ -1,5 +1,19 @@
 <template>
   <div class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div
+      v-if="isDemo"
+      class="bg-amber-100 border-b border-amber-300 text-amber-900 text-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="max-w-7xl mx-auto px-6 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <p>
+          <strong>Modalità demo.</strong> Dati e mappa simulati per finalità di
+          presentazione. Nessuna chiamata reale al backend.
+        </p>
+        <a class="underline hover:no-underline shrink-0" href="../">Torna alla landing page</a>
+      </div>
+    </div>
     <header class="bg-logitrack-teal text-white shadow">
       <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <router-link to="/" class="flex items-center gap-3">
@@ -34,8 +48,8 @@
 
     <footer class="bg-slate-900 text-slate-300 text-sm">
       <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between gap-2">
-        <p>LogiTrack - Mozzecane (VR) - P.IVA 00000000000</p>
-        <p>Made in Verona - Corridoio del Brennero</p>
+        <p>LogiTrack - kit freelancer per PMI venete</p>
+        <p>Mozzecane (VR) - Corridoio del Brennero</p>
       </div>
     </footer>
   </div>
@@ -57,6 +71,11 @@ import { clearAccessToken, hasAccessToken } from '@/lib/tokenStore';
 
 const route = useRoute();
 const router = useRouter();
+
+// True only on builds produced with VITE_DEMO_MODE=true (the GitHub
+// Pages publishing path). Production builds tree-shake this branch
+// to a constant `false` and the banner is removed by the bundler.
+const isDemo = import.meta.env.VITE_DEMO_MODE === 'true';
 
 // route.fullPath is reactive, so this getter re-evaluates on
 // navigation — no manual subscription needed.

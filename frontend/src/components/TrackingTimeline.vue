@@ -40,6 +40,7 @@
 
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getAccessToken } from '@/lib/tokenStore';
+import { createTrackingSocket, type WSLike } from '@/lib/createWS';
 
 interface TimelineEvent {
   id: string;
@@ -63,7 +64,7 @@ const props = defineProps<{ shipmentId: string }>();
 const events = ref<TimelineEvent[]>([]);
 const wsConnected = ref(false);
 
-let socket: WebSocket | null = null;
+let socket: WSLike | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempts = 0;
 const reconnectMaxMs = 30_000;
@@ -141,7 +142,7 @@ function connect() {
   const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url = `${scheme}//${window.location.host}/api/v1/stream/tracking`;
   try {
-    socket = new WebSocket(url, ['logitrack.jwt.v1', tok]);
+    socket = createTrackingSocket(url, ['logitrack.jwt.v1', tok]);
   } catch {
     scheduleReconnect();
     return;
@@ -151,9 +152,9 @@ function connect() {
     wsConnected.value = true;
     socket?.send(JSON.stringify({ op: 'subscribe', shipmentId: props.shipmentId }));
   };
-  socket.onmessage = (ev) => {
+  socket.onmessage = (ev: { data: string }) => {
     try {
-      const msg = JSON.parse(ev.data as string) as IncomingEvent | { type: string };
+      const msg = JSON.parse(ev.data) as IncomingEvent | { type: string };
       const m = msg as IncomingEvent;
       if (!m.type || !m.shipmentId || m.shipmentId !== props.shipmentId) return;
       const occurredAt = m.occurredAt ?? m.recordedAt ?? new Date().toISOString();
@@ -170,7 +171,7 @@ function connect() {
       /* ignore malformed payload */
     }
   };
-  socket.onclose = (ev) => {
+  socket.onclose = (ev: { code: number }) => {
     wsConnected.value = false;
     if (ev.code >= 4000 && ev.code < 5000) return;
     scheduleReconnect();

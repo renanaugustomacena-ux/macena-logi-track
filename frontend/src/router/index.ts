@@ -1,4 +1,10 @@
-import { createRouter, createWebHistory, type RouteLocationNormalized, type RouteRecordRaw } from 'vue-router';
+import {
+  createRouter,
+  createWebHashHistory,
+  createWebHistory,
+  type RouteLocationNormalized,
+  type RouteRecordRaw,
+} from 'vue-router';
 import { hasAccessToken } from '@/lib/tokenStore';
 
 // Lazy-loaded route components to keep the initial bundle small.
@@ -45,8 +51,17 @@ const routes: RouteRecordRaw[] = [
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 
+// Demo builds (GitHub Pages) use hash history because Pages cannot
+// 404-fallback to index.html for arbitrary client-side routes.
+// Production builds use HTML5 history backed by the customer's reverse
+// proxy.
+const history =
+  import.meta.env.VITE_DEMO_MODE === 'true'
+    ? createWebHashHistory()
+    : createWebHistory();
+
 const router = createRouter({
-  history: createWebHistory(),
+  history,
   routes,
   scrollBehavior: () => ({ top: 0 }),
 });

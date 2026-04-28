@@ -42,6 +42,7 @@
 import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue';
 import type { GeoPoint } from '@/stores/shipment';
 import { getAccessToken } from '@/lib/tokenStore';
+import { createTrackingSocket, type WSLike } from '@/lib/createWS';
 
 interface ShipmentEvent {
   shipmentId: string;
@@ -78,7 +79,7 @@ let mapInstance: unknown = null;
 let liveMarker: unknown = null;
 let plannedLayer: unknown = null;
 let L: typeof import('leaflet') | null = null;
-let socket: WebSocket | null = null;
+let socket: WSLike | null = null;
 let etaTimer: ReturnType<typeof setInterval> | null = null;
 
 const etaLabel = computed(() => {
@@ -195,7 +196,7 @@ function connectWS() {
   // the 2026-04-27 audit follow-up — query strings hit access logs,
   // browser history and reverse-proxy caches.
   try {
-    socket = new WebSocket(url, ['logitrack.jwt.v1', tok]);
+    socket = createTrackingSocket(url, ['logitrack.jwt.v1', tok]);
   } catch {
     // SecurityError from some browsers blocking mixed schemes — fail
     // soft and try again with backoff.
@@ -206,9 +207,9 @@ function connectWS() {
     reconnectAttempts = 0;
     socket?.send(JSON.stringify({ op: 'subscribe', shipmentId: props.shipmentId }));
   };
-  socket.onmessage = (ev) => {
+  socket.onmessage = (ev: { data: string }) => {
     try {
-      const msg = JSON.parse(ev.data as string) as ShipmentEvent | { type: string };
+      const msg = JSON.parse(ev.data) as ShipmentEvent | { type: string };
       const m = msg as ShipmentEvent;
       if (m.shipmentId && m.shipmentId !== props.shipmentId) return;
       if (m.position) {
@@ -220,7 +221,7 @@ function connectWS() {
       /* ignore malformed payload */
     }
   };
-  socket.onclose = (ev) => {
+  socket.onclose = (ev: { code: number }) => {
     // 4xxx close codes mean auth/protocol failure — do not retry.
     if (ev.code >= 4000 && ev.code < 5000) return;
     scheduleReconnect();
