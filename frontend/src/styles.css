@@ -4,18 +4,222 @@
 
 :root {
   color-scheme: light;
-  --logitrack-teal: #0f4c5c;
-  --logitrack-blue: #1d4ed8;
-  --logitrack-amber: #f59e0b;
+
+  /* Brand */
+  --lt-teal: #0f4c5c;
+  --lt-teal-700: #0a3744;
+  --lt-blue: #1d4ed8;
+  --lt-blue-700: #1e3a8a;
+  --lt-amber: #f59e0b;
+
+  /* Neutrals */
+  --lt-ink-900: #0f172a;
+  --lt-ink-700: #334155;
+  --lt-ink-500: #64748b;
+  --lt-ink-300: #cbd5e1;
+  --lt-ink-100: #f1f5f9;
+  --lt-ink-50: #f8fafc;
+
+  /* Semantic */
+  --lt-ok: #059669;
+  --lt-ok-bg: #ecfdf5;
+  --lt-warn: #d97706;
+  --lt-warn-bg: #fffbeb;
+  --lt-bad: #dc2626;
+  --lt-bad-bg: #fef2f2;
+  --lt-info: #2563eb;
+  --lt-info-bg: #eff6ff;
+
+  /* Type scale (clamp for responsive) */
+  --lt-text-xs: 0.75rem;
+  --lt-text-sm: 0.875rem;
+  --lt-text-base: 1rem;
+  --lt-text-lg: 1.125rem;
+  --lt-text-xl: 1.25rem;
+  --lt-text-2xl: 1.5rem;
+  --lt-text-3xl: 1.875rem;
+
+  /* Spacing scale */
+  --lt-space-1: 0.25rem;
+  --lt-space-2: 0.5rem;
+  --lt-space-3: 0.75rem;
+  --lt-space-4: 1rem;
+  --lt-space-6: 1.5rem;
+  --lt-space-8: 2rem;
+  --lt-space-12: 3rem;
+
+  /* Radii */
+  --lt-radius-sm: 0.25rem;
+  --lt-radius-md: 0.5rem;
+  --lt-radius-lg: 0.75rem;
+
+  /* Shadows */
+  --lt-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --lt-shadow-md: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --lt-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --lt-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
 body {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Leaflet tiles live inside rounded cards; remove default focus halo
  * inside the map for a cleaner dashboard look. */
 .leaflet-container:focus {
   outline: none;
+}
+
+/* Reusable card surface — replaces ad-hoc bg-white/rounded/shadow */
+.lt-card {
+  background-color: white;
+  border-radius: var(--lt-radius-md);
+  box-shadow: var(--lt-shadow-card);
+}
+
+.lt-card-header {
+  padding: var(--lt-space-4) var(--lt-space-6);
+  border-bottom: 1px solid var(--lt-ink-100);
+}
+
+.lt-card-body {
+  padding: var(--lt-space-6);
+}
+
+/* KPI card flourish — subtle top accent */
+.lt-kpi {
+  position: relative;
+  background-color: white;
+  border-radius: var(--lt-radius-md);
+  box-shadow: var(--lt-shadow-card);
+  padding: var(--lt-space-4) var(--lt-space-6);
+  overflow: hidden;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+.lt-kpi:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--lt-shadow-md);
+}
+.lt-kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--lt-teal), var(--lt-blue));
+  opacity: 0.85;
+}
+.lt-kpi.is-warn::before {
+  background: linear-gradient(90deg, var(--lt-warn), var(--lt-amber));
+}
+.lt-kpi.is-bad::before {
+  background: linear-gradient(90deg, var(--lt-bad), #f97316);
+}
+.lt-kpi.is-ok::before {
+  background: linear-gradient(90deg, var(--lt-ok), #14b8a6);
+}
+
+/* Severity pills used by the Scadenze panel */
+.lt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.lt-pill.is-ok {
+  background: var(--lt-ok-bg);
+  color: var(--lt-ok);
+}
+.lt-pill.is-warn {
+  background: var(--lt-warn-bg);
+  color: var(--lt-warn);
+}
+.lt-pill.is-bad {
+  background: var(--lt-bad-bg);
+  color: var(--lt-bad);
+}
+.lt-pill.is-info {
+  background: var(--lt-info-bg);
+  color: var(--lt-info);
+}
+
+/* =====================================================================
+ * FIR print stylesheet — applies when the user prints the FIR preview.
+ * Hides chrome (header, banner, navigation), forces black-on-white,
+ * sets A4 margins, and disables shadows so the document looks like an
+ * official module.
+ * ================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 14mm 12mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide everything except the .lt-print-root subtree. */
+  body * {
+    visibility: hidden !important;
+  }
+  .lt-print-root,
+  .lt-print-root * {
+    visibility: visible !important;
+  }
+  .lt-print-root {
+    position: absolute;
+    inset: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove dashboard chrome */
+  .lt-no-print,
+  header,
+  nav,
+  footer,
+  [role='banner'],
+  [role='status'].lt-no-print {
+    display: none !important;
+  }
+
+  .lt-fir-page {
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: always;
+  }
+  .lt-fir-page:last-child {
+    page-break-after: auto;
+  }
+
+  /* Print-only utility classes */
+  .lt-print-only {
+    display: block !important;
+  }
+  a[href]::after {
+    content: '';
+  }
+}
+
+.lt-print-only {
+  display: none;
 }

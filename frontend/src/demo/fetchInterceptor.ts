@@ -15,9 +15,11 @@
 // not a backend simulator.
 
 import {
+  DEMO_ACTIVITY,
   DEMO_DESTINATARI,
   DEMO_FIR,
   DEMO_PRODUTTORI,
+  DEMO_SCADENZE,
   DEMO_SHIPMENTS,
   DEMO_TRASPORTATORI,
 } from './data';
@@ -172,24 +174,34 @@ function handle(method: string, path: string): Response | null {
   }
   const cerMatch = /^\/api\/v1\/rifiuti\/cer\/([^/]+)$/.exec(path);
   if (cerMatch && method === 'GET') {
-    const code = cerMatch[1];
-    const valid = /^\d{6}$/.test(code);
+    const raw = decodeURIComponent(cerMatch[1]).trim();
+    const normalised = raw.replace(/\s+/g, '');
+    const isPericoloso = normalised.endsWith('*');
+    const digits = normalised.replace(/\*$/, '');
+    const valid = /^\d{6}$/.test(digits);
     if (!valid) {
       return jsonResponse({
-        input: code,
+        input: raw,
         valid: false,
-        error: 'CER code must be 6 digits',
-        normalised: code,
+        error: 'Codice CER non valido (atteso: 6 cifre, opzionale * finale per pericolosi)',
+        normalised,
       });
     }
-    const pericoloso = code.endsWith('*') || ['170504', '160601'].includes(code);
     return jsonResponse({
-      input: code,
+      input: raw,
       valid: true,
-      normalised: code,
-      pericoloso,
-      chapter: code.substring(0, 2),
+      normalised,
+      pericoloso: isPericoloso,
+      chapter: digits.substring(0, 2),
     });
+  }
+
+  // Dashboard summary endpoints (demo-only, used by the home view)
+  if (path === '/api/v1/dashboard/scadenze' && method === 'GET') {
+    return jsonResponse({ items: DEMO_SCADENZE });
+  }
+  if (path === '/api/v1/dashboard/activity' && method === 'GET') {
+    return jsonResponse({ items: DEMO_ACTIVITY });
   }
 
   // Generic POST fallback for create/transition/vidima — return 200
