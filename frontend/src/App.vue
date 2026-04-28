@@ -8,8 +8,9 @@
     >
       <div class="max-w-7xl mx-auto px-6 py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <p>
-          <strong>Modalità demo.</strong> Dati e mappa simulati per finalità di
-          presentazione. Nessuna chiamata reale al backend.
+          <strong>Modalità demo.</strong> Dati di esempio per la sola
+          presentazione commerciale. La versione consegnata al cliente
+          opera su dati reali, sul server intestato al cliente.
         </p>
         <a class="underline hover:no-underline shrink-0" href="../">Torna alla landing page</a>
       </div>

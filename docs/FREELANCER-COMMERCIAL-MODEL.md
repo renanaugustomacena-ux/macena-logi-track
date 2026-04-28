@@ -47,11 +47,16 @@ Why contratto d'opera ex art. 2222?
    staging, 34% al go-live di produzione + handover).
 5. **Tempi**: data inizio, data prevista go-live, milestone
    intermedi.
-6. **Proprietà intellettuale**: il committente acquisisce il diritto
-   d'uso esclusivo del fork; il freelancer mantiene il diritto di
-   riusare le componenti generiche del kit per altri clienti
-   (clausola "kit reusability"). Se il committente vuole esclusiva
-   sull'intero kit (nessun altro cliente), il prezzo si triplica.
+6. **Proprietà intellettuale e licenze** (vedi §11 sotto per il
+   modello completo): il committente riceve una **licenza esclusiva,
+   perpetua e illimitata d'uso** dell'applicazione personalizzata, con
+   pieno accesso al codice sorgente del proprio deployment depositato
+   su un repository Git privato a lui intestato. Il freelancer
+   mantiene la proprietà dei **componenti tecnologici generici della
+   piattaforma di base** (librerie, pattern di sicurezza, modelli
+   generici) e il diritto di riutilizzarli per altri progetti. Se il
+   committente desidera esclusiva sull'intera piattaforma di base
+   (nessun altro cliente in grado di usarla), il prezzo si triplica.
 7. **Riservatezza**: NDA reciproca. Definire perimetro (dati clienti
    del committente trattati durante l'engagement).
 8. **GDPR + Trattamento Dati**: il freelancer è "Responsabile del
@@ -243,3 +248,94 @@ forfait copre già le spese). Quindi i costi effettivi escono dal
 netto in tasca, riducendolo, ma non riducono l'imposta. È un
 trade-off che vale la pena solo se le spese reali sono < 22% dei
 ricavi.
+
+## 11. Modello di licenza — proprietà di cosa, di chi
+
+Da spiegare al cliente in linguaggio chiaro, da pinnare nel contratto
+in clausola dedicata. Tre livelli:
+
+### 11.1 La piattaforma tecnologica di base — di proprietà del freelancer
+
+Le componenti tecnologiche generiche e riutilizzabili tra clienti
+diversi:
+
+- Librerie tecniche (autenticazione, audit log, repository pattern,
+  catena di custodia firmata, validatori EER/CER, plate validator
+  italiano, integrazione RENTRI, ecc.).
+- Pattern di sicurezza (alg-pinning JWT, rate-limit con eviction,
+  SSRF guards, hardening produzione).
+- Architettura della piattaforma (Go + MongoDB + Redis + Vue 3,
+  separazione modulare, contratti tra layer).
+
+Restano di **proprietà esclusiva del freelancer**, che le riutilizza
+in ogni nuovo progetto. Esattamente come uno studio di architettura
+riutilizza i propri schemi strutturali standard. Il committente NON
+acquisisce diritti su queste componenti generiche.
+
+### 11.2 L'applicazione personalizzata — licenza esclusiva perpetua al committente
+
+Quello che il freelancer sviluppa **specificamente per il committente**:
+
+- Branding, palette colori, logo, layout adattato.
+- Adapter di integrazione con la specifica telematica del committente.
+- Personalizzazione dei flussi operativi (regole di stato, workflow
+  approvativi, custom validation).
+- Configurazione delle anagrafiche, dei ruoli operatore, dei report.
+- Eventuali moduli verticali commissionati ad hoc.
+
+Il committente riceve una **licenza esclusiva, perpetua, irrevocabile
+e illimitata** d'uso dell'applicazione personalizzata, con accesso al
+codice sorgente del proprio deployment depositato su un repository Git
+privato a lui intestato. Esclusiva significa che il freelancer non
+distribuirà la stessa applicazione personalizzata (con lo stesso
+brand, gli stessi adapter, gli stessi flussi specifici) ad altri
+clienti. La licenza copre uso interno illimitato, modifica del codice,
+ma NON la rivendita o sublicenza a terzi sotto il marchio LogiTrack
+senza accordo separato.
+
+Conseguenza pratica per il committente: se domani il freelancer
+sparisce o sceglie un altro tecnico, l'applicazione resta funzionante
+sul server, il codice sorgente è disponibile, un altro sviluppatore Go
+può prenderla in mano e mantenerla. Niente lock-in vendor.
+
+### 11.3 I dati operativi — proprietà esclusiva del committente
+
+Tutto ciò che il committente carica o produce attraverso
+l'applicazione (anagrafiche dei suoi clienti finali, FIR, posizioni
+mezzi, audit log, configurazioni operative) è **al 100% del
+committente**, sempre. Il freelancer non ne acquisisce alcun diritto
+e ne accede solo nell'ambito della manutenzione concordata, registrato
+nel registro dei trattamenti GDPR Art. 30 come Responsabile del
+Trattamento.
+
+A fine contratto: export completo in formati aperti (JSON, CSV,
+GeoJSON) consegnato entro 30 giorni; il freelancer cancella ogni copia
+locale entro 60 giorni dalla consegna dell'export, con dichiarazione
+sostitutiva di atto di notorietà.
+
+### 11.4 Esclusiva totale (opzione premium ×3)
+
+Il committente che desidera anche **l'esclusiva sulla piattaforma di
+base** (i.e. il freelancer non potrà riutilizzare la piattaforma per
+altri clienti del medesimo settore o area geografica) paga il
+preventivo base moltiplicato per tre. È un'opzione raramente
+consigliata: la piattaforma di base trae beneficio dal mantenimento
+condiviso (patch normative, fix di sicurezza, ottimizzazioni)
+distribuito su più clienti.
+
+### 11.5 Da pinnare nel preventivo — formula sintetica
+
+> "L'applicazione personalizzata è in licenza esclusiva, perpetua e
+> irrevocabile alla committente. Il codice sorgente del deployment
+> della committente è depositato su un repository Git privato a lei
+> intestato. La committente è titolare esclusiva dei dati operativi.
+> Il fornitore mantiene la proprietà dei componenti tecnologici
+> generici della piattaforma di base e il diritto di riutilizzarli
+> per altri progetti, senza alcun riferimento al brand o ai dati
+> della committente."
+
+Questa formula è molto vicina a come operano gli studi di
+architettura, gli avvocati associati e le software house italiane
+serie. È difendibile in udienza, accettabile dal commercialista del
+cliente, e non richiede consulenza legale costosa per essere
+spiegata.

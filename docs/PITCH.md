@@ -33,34 +33,43 @@ una parte ma:
 
 ## La soluzione
 
-LogiTrack è un **kit di software**: un freelancer (Renan Augusto
-Macena, Mozzecane VR) prende la base Go + MongoDB + Redis + Vue 3,
-**la fa fork sul tuo nome**, la personalizza per i tuoi flussi, la
-deploya sul tuo VPS (o sul tuo Kubernetes, o su un VPS Aruba IT
-intestato a te), e ti consegna le chiavi.
+LogiTrack è un **software gestionale dedicato**: un professionista
+freelance (Renan Augusto Macena, Mozzecane VR) sviluppa per la tua
+azienda una applicazione web personalizzata sui tuoi flussi reali,
+brandizzata col tuo nome, e la installa su un server intestato a te
+(VPS Aruba IT, infrastruttura on-premise, oppure cloud cliente). Tu
+hai il software, hai i dati, hai il codice sorgente del tuo
+deployment depositato su un repository privato a te intestato.
 
-Cosa porta il kit "out of the box":
+L'applicazione si fonda su una piattaforma tecnologica già collaudata
+— ne riutilizzo i componenti generici (sicurezza, mappa live, ciclo
+di vita FIR) tra clienti diversi, esattamente come uno studio di
+architettura riutilizza i propri schemi strutturali — ma quello che
+è specifico della tua azienda è esclusivamente tuo.
+
+Cosa è incluso fin da subito:
 
 1. **Mappa live multi-mezzo** con marker che si muovono in tempo
-   reale, polilinea OSRM (self-hosted opzionale) o straight-line di
-   fallback, geofence in/out per cantieri/depositi/terminal.
-2. **Dashboard dispatcher unificato** — una sola schermata, filtri per
-   stato/vettore/data, timeline eventi per spedizione, ETA aggiornato
-   sull'ultima velocità misurata.
-3. **Catena di custodia firmata SHA-256** — append-only, ogni
-   transizione (creato, caricato, sigillato, in transito,
-   consegnato, eccezione) genera un record immutabile col prev-hash
-   del precedente. Tampering rilevabile in audit.
-4. **Ingest webhook telematica** generico (Viasat, Octo, Geotab e
-   simili). L'integrazione con la specifica fonte è un adapter di
-   poche centinaia di righe da scrivere durante l'engagement.
-5. **WebSocket live** per il dashboard, autenticazione JWT solida,
-   rate-limit sia all'handshake che per connessione, idle disconnect
-   a 5 minuti, slow-consumer drop.
-6. **Scaffolding multi-tenant** — anche se il kit lo deployi per UN
-   cliente, lo scoping per `tenant_id` è già nel repository layer.
-   Aggiungere un secondo magazzino o una seconda ragione sociale è
-   gratis.
+   reale sul percorso pianificato. Geofence in entrata/uscita per
+   cantieri, depositi, terminal intermodali.
+2. **Dashboard dispatcher unificata** — una sola schermata, filtri per
+   stato / vettore / data, timeline eventi per spedizione, ETA
+   aggiornato sull'ultima velocità misurata del mezzo.
+3. **Catena di custodia firmata** — ogni passaggio del carico
+   (creazione, caricamento, sigillo, transito, consegna, eccezione)
+   viene registrato in modo immodificabile e firmato
+   crittograficamente. Eventuali manomissioni postume sono
+   rilevabili in audit.
+4. **Ricezione automatica dati telematici** dai principali fornitori
+   (Viasat, Octo, Geotab e simili). L'integrazione col tuo specifico
+   fornitore viene sviluppata durante l'engagement.
+5. **Connessione live sicura** per il dispatcher: autenticazione
+   robusta, protezione anti-abuso, disconnessione automatica per
+   inattività.
+6. **Architettura pronta per crescere** — anche se il software è
+   dedicato a te oggi, è strutturato per gestire più sedi operative
+   o più ragioni sociali quando ne avrai bisogno, senza rifare il
+   software da capo.
 
 ## Target customer
 

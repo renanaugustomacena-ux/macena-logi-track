@@ -1,11 +1,13 @@
 # LogiTrack Rifiuti — Pitch One-Pager
 
-> Door-to-door / cold-call pitch per trasportatori e intermediari di
-> rifiuti speciali nel corridoio Verona Sud / Mantova / Brescia.
-> Companion to the logistics one-pager
-> ([`PITCH.md`](PITCH.md)), which targets a different ICP.
-> Modello di ingaggio: kit + fork-per-cliente, NON SaaS.
-> Vedi [`FREELANCER-COMMERCIAL-MODEL.md`](FREELANCER-COMMERCIAL-MODEL.md).
+> One-pager per trasportatori e intermediari di rifiuti speciali nel
+> corridoio Verona Sud / Mantova / Brescia. Companion alla one-pager
+> logistica ([`PITCH.md`](PITCH.md)) che si rivolge a un ICP diverso.
+>
+> Modello di ingaggio: software gestionale dedicato per cliente,
+> installato su infrastruttura intestata al cliente. NON un servizio
+> cloud condiviso. Dettagli commerciali in
+> [`FREELANCER-COMMERCIAL-MODEL.md`](FREELANCER-COMMERCIAL-MODEL.md).
 
 ## Il problema
 
@@ -38,35 +40,38 @@ risolvono parte del problema ma:
 
 ## La soluzione
 
-LogiTrack Rifiuti è il modulo verticale del kit LogiTrack costruito
-sopra la stessa piattaforma Go + MongoDB + Redis che serve già il
-modulo logistico. Il kit è freelancer-grade: una fork del repository
-viene personalizzata e deployata sul tuo VPS (intestato al cliente),
-non su un cloud condiviso. Aggiunge:
+LogiTrack Rifiuti è il modulo verticale per il trasporto di rifiuti
+speciali, costruito sulla stessa piattaforma tecnologica del modulo
+logistico. Quando ti ingaggio sviluppo per la tua azienda una
+applicazione gestionale dedicata, brandizzata, installata su un
+server intestato a te (Aruba IT, infrastruttura on-premise, oppure
+cloud cliente) — non su un cloud condiviso con altre aziende. Cosa
+aggiunge il modulo rifiuti rispetto a quello logistico:
 
 1. **Modello di dominio completo** Produttore / Trasportatore /
    Destinatario / FIR / Registro cronologico / Albo, con codici
    EER (catalogo Decisione UE 2014/955), classi di pericolo
    HP1–HP15 (Reg. UE 1357/2014), e mapping ADR per i rifiuti
    pericolosi.
-2. **Macchina a stati FIR completa** (`draft → vidimato →
-   consegnato_trasportatore → in_transito → consegnato_destinatario →
-   chiuso`, più rami `respinto` e `annullato`), con guard su ogni
-   transizione e watchdog dei 90 giorni per la copia produttore
-   (art. 188-bis c. 4).
+2. **Ciclo di vita FIR digitale completo** (bozza → vidimato →
+   consegnato al trasportatore → in transito → consegnato al
+   destinatario → chiuso, con rami "respinto" e "annullato"). Ogni
+   transizione di stato è validata; watchdog automatico a 90 giorni
+   per la copia produttore (art. 188-bis c. 4 TUA).
 3. **Verifica Albo + autorizzazione impianto** in tempo reale prima
    della firma del FIR: una `Trasportatore.CanCarry(cer, oggi)`
    blocca il movimento se l'iscrizione è scaduta o la categoria non
    copre il codice; una `Destinatario.CanReceive(cer, op, oggi)`
    blocca se l'impianto non è autorizzato per quel CER + operazione.
-4. **Adapter RENTRI a doppio binario**: in produzione parte uno
-   `QueuedStub` deterministico, idempotency-key-protected, che
-   accetta FIR e movimenti, accumula la coda e consente
-   l'esercizio completo della piattaforma. Quando il certificato
-   digitale RENTRI del cliente è attivo, basta un cambio di
-   costruttore in `cmd/server/main.go` e l'adapter HTTP live
-   sostituisce lo stub. Sandbox `demoapi.rentri.gov.it` configurata
-   come default in non-produzione.
+4. **Integrazione RENTRI a doppio binario**: nei primi giorni il
+   software opera in modalità "coda interna" — accumula i FIR
+   pronti per la trasmissione, garantisce idempotenza in caso di
+   ritrasmissione, ti permette di esercitare la piattaforma sui
+   tuoi dati reali. Quando arriva il certificato digitale RENTRI
+   intestato alla tua impresa, l'attivazione della trasmissione
+   live è una semplice configurazione, senza riscrittura del
+   software. Sandbox RENTRI configurata fin da subito per
+   collaudo.
 5. **Catena di custodia firmata SHA-256 + audit-log multi-tenant**
    già platform-grade (eredità del modulo logistico).
 6. **Tracciamento GPS dei mezzi** (Viasat, Octo, Geotab) e
@@ -99,7 +104,7 @@ trasportatori entro 25 km dal centro.
 ## Implementation timeline
 
 Engagement standard: **6–8 settimane** dalla firma del preventivo
-alla consegna delle chiavi del fork operativo.
+alla consegna delle chiavi dell'applicazione operativa.
 
 - **Settimana 1** — onboarding anagrafiche Produttori /
   Trasportatori / Destinatari, sincronizzazione delle iscrizioni
@@ -111,12 +116,12 @@ alla consegna delle chiavi del fork operativo.
 - **Settimana 3** — collegamento opzionale di una telematica
   veicolare (Viasat o equivalente) e attivazione del cruscotto
   dispatcher.
-- **Settimana 4** — trasmissione di un FIR pilota end-to-end via
-  `QueuedStub`; preparazione delegazione SPID/CIE/CNS per il
-  certificato RENTRI di produzione.
-- **Settimana 6** — cutover sull'adapter HTTP live RENTRI appena
-  il certificato è disponibile; conservazione a norma AgID via
-  conservatore accreditato selezionato in onboarding.
+- **Settimana 4** — trasmissione di un FIR pilota end-to-end in
+  modalità coda interna; preparazione della delegazione SPID/CIE/CNS
+  per il certificato RENTRI di produzione.
+- **Settimana 6** — passaggio alla trasmissione RENTRI live appena
+  il certificato è disponibile; attivazione della conservazione a
+  norma AgID via conservatore accreditato selezionato in onboarding.
 - **Settimana 7-8** — handover, formazione operatori, transizione
   al retainer mensile.
 

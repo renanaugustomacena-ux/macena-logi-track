@@ -38,7 +38,7 @@ the discovery call.
 | 5 | Ecoservizi S.n.c. | Castelnuovo del Garda (VR) | RAEE + pericolosi + toner | — | — |
 | 6 | Veneta Recuperi | Sona (VR) | Recupero | — | — |
 | 7 | Sun Oil Italiana | Sona (VR) | Oli esausti | — | — |
-| 8 | Ecodent | Villafranca (VR) | Sanitario dentale | — | Specializzato; valutare se kit basta o servono adattamenti |
+| 8 | Ecodent | Villafranca (VR) | Sanitario dentale | — | Specializzato; valutare se la base tecnologica basta o servono adattamenti |
 | 9 | Cimaf | Goito (MN) | Trasporto rifiuti speciali | — | Lombardia, fuori VR ma a portata |
 | 10 | Agrofert | Isola della Scala (VR) | Agro/ortofrutta | — | Valutare scope |
 
@@ -49,28 +49,31 @@ centro di Mozzecane; lista archived in the freelancer's working notes
 ## 3. Cold-call script (rifiuti, 2 min)
 
 > "Buongiorno, sono Renan Macena di Mozzecane, sviluppo software
-> gestionale per piccole e medie imprese del settore trasporti.
-> Cerco un piccolo trasportatore di rifiuti speciali della zona —
-> 5-30 mezzi, iscritti Albo cat. 4 o 5 — che voglia provare in
-> anteprima un gestionale RENTRI-ready che ho appena finito.
-> 
-> Non vendo un canone mensile per posto come TeamSystem o
-> Passepartout. Vendo un progetto: prendo il software, lo
-> personalizzo per i vostri flussi reali, lo installo su un server
-> intestato a voi, e ve lo consegno con le chiavi. Un mese in tutto
-> il primo cliente, 6-8 settimane gli altri.
-> 
-> Mi piacerebbe venire a salutarvi un'ora — porto un caffè e una
-> demo del kit funzionante con FIR digitali e RENTRI sandbox. Se
-> non vi interessa, niente preventivo, ma capisco un po' meglio
-> cosa cercano davvero le PMI come voi.
+> gestionale su misura per piccole e medie imprese del settore
+> trasporti. Cerco un piccolo trasportatore di rifiuti speciali della
+> zona — 5-30 mezzi, iscritti Albo cat. 4 o 5 — che voglia provare
+> un'applicazione gestionale RENTRI-ready che ho appena terminato.
+>
+> Non vendo un abbonamento per posto come TeamSystem o Passepartout.
+> Vi sviluppo un'applicazione dedicata, brandizzata col vostro nome,
+> installata su un server intestato a voi, con il codice sorgente
+> depositato su un repository privato a voi intestato. Il software
+> resta vostro: se domani sceglierete un altro tecnico, un altro
+> sviluppatore può prenderlo in mano. Un progetto chiavi in mano da
+> 6-8 settimane.
+>
+> Mi piacerebbe venire a trovarvi un'ora — porto un caffè e una
+> demo dell'applicazione funzionante con FIR digitali e
+> integrazione RENTRI sandbox. Se non vi interessa, niente
+> preventivo, ma in ogni caso capisco un po' meglio cosa cercano
+> davvero le aziende come la vostra.
 >
 > Quando posso passare?"
 
 Variants:
-- For **logistics** target: "...sviluppo software per la logistica
-  di PMI venete... cerco un trasportatore o spedizioniere 5-30 mezzi
-  che fa Brennero o A4 Milano..."
+- For **logistics** target: "...sviluppo software gestionale su
+  misura per la logistica di PMI venete... cerco un trasportatore o
+  spedizioniere 5-30 mezzi che fa Brennero o A4 Milano..."
 - For **logistics + rifiuti combined**: "...cerco un trasportatore
   che ha bisogno di mappa live per il dispatcher e anche di
   RENTRI..."
@@ -80,8 +83,9 @@ Variants:
 ### Open
 
 > "Grazie del caffè. Per non rubarvi tempo, vi faccio 7 domande in
-> mezz'ora, poi vi mostro la demo del kit, poi ne parliamo. Se non
-> vi serve, non perdiamoci tempo a vicenda. Va bene?"
+> mezz'ora, poi vi mostro una demo dell'applicazione, poi ne
+> parliamo. Se non vi serve, non perdiamoci tempo a vicenda. Va
+> bene?"
 
 ### 7 domande (logistics)
 
@@ -110,28 +114,38 @@ Variants:
 
 ### Demo (15 min, sul portatile in tavolo)
 
-1. Aprire il dashboard del kit (deployment demo locale o staging
-   personale).
-2. Mostrare la mappa live con un simulator che pubblica waypoint a
-   1 Hz.
-3. Aprire una spedizione, mostrare timeline + chain-of-custody +
-   ETA dinamico.
-4. (Per rifiuti) Aprire la `/rifiuti` view, creare un FIR di
-   prova end-to-end fino a `vidima`, mostrare il numero
-   RENTRI deterministico restituito dal queued-stub.
-5. Mostrare l'`audit_log` per dimostrare cosa registra il sistema.
+1. Aprire la dashboard di demo pubblica
+   (`https://renanaugustomacena-ux.github.io/macena-logi-track/demo/`)
+   oppure il deployment di staging personale.
+2. Mostrare la mappa live con il simulatore che aggiorna le
+   posizioni in tempo reale.
+3. Aprire una spedizione, mostrare timeline eventi, catena di
+   custodia firmata, ETA dinamico.
+4. (Per rifiuti) Aprire la sezione "Rifiuti", creare un FIR di
+   prova end-to-end fino alla vidimazione, mostrare il numero
+   RENTRI restituito.
+5. Mostrare il registro completo delle attività per dimostrare
+   come il software documenta in automatico le operazioni ai fini
+   GDPR Art. 30.
 
 ### Close
 
-> "Quello che avete visto è il kit, già funzionante. Se ci ingaggiate,
-> il primo passo è una mezza giornata in cui mappiamo i vostri
-> flussi reali — anagrafiche, integrazioni, telematica. Poi vi mando
-> un preventivo a corpo per le settimane di lavoro: di solito tra le
-> 6 e le 8 settimane fino al go-live. Pagamento in 3 stati di
-> avanzamento, fattura via FatturaPA. Niente canone mensile finché
-> non passiamo al retainer dopo il go-live, e il retainer è
-> opzionale.
-> 
+> "Quello che avete visto è la base tecnologica, già collaudata. Se
+> ci ingaggiate, il primo passo è una mezza giornata in cui
+> mappiamo i vostri flussi reali — anagrafiche, integrazioni,
+> telematica, brand. Poi vi mando un preventivo a corpo per le
+> settimane di lavoro: di solito tra le 6 e le 8 settimane fino al
+> go-live. Pagamento in 3 stati di avanzamento, fatturazione
+> elettronica via SDI. Nessun canone mensile durante lo sviluppo;
+> il contratto di manutenzione mensile parte solo dopo il go-live,
+> ed è opzionale.
+>
+> A fine progetto vi consegno: l'applicazione installata e
+> funzionante, il codice sorgente del vostro deployment depositato
+> su un repository Git privato a voi intestato, le credenziali del
+> server, la documentazione operativa, una mezza giornata di
+> formazione del personale.
+>
 > Vi mando il preventivo entro 5 giorni lavorativi. Se non vi
 > convince, niente. Se vi convince, partiamo."
 
@@ -140,10 +154,10 @@ Variants:
 | Obiezione | Risposta breve |
 | --- | --- |
 | "Costa troppo." | "Quanto pagate l'anno di canone oggi? Il mio progetto si ripaga in 8-14 mesi rispetto a un canone PMI tipico di € 500-700/mese, e dopo è vostro." |
-| "TeamSystem ce l'ha già." | "Sì, ma il vostro contratto è loro. I vostri dati sono loro. Il giorno che cambiate fornitore, l'export è una sofferenza. Con il kit, l'unica cosa che possedete è esattamente il vostro software." |
-| "Siamo troppo piccoli." | "Il kit è pensato per 5-30 mezzi. Sotto 5 forse non vale la pena, sopra 30 servono ottimizzazioni. Voi siete dentro il sweet-spot." |
-| "Non capiamo di software." | "Per questo c'è il retainer. Vi consegno le chiavi ma resto disponibile a giornata o a forfait mensile. Nessun cliente di kit fa amministrazione DevOps senza supporto." |
-| "RENTRI ce lo fa il commercialista." | "Bene. Il kit prepara il FIR digitale, lo manda al RENTRI sandbox per la prova, e quando avete il certificato si aggancia automaticamente al RENTRI vero. Il commercialista resta nel suo ruolo: validazione finale e DGSA." |
+| "TeamSystem ce l'ha già." | "Sì, ma il vostro contratto è loro. I vostri dati sono loro. Il giorno che cambiate fornitore, l'export è una sofferenza. Con LogiTrack avete la vostra applicazione, sul vostro server, il codice sorgente intestato a voi. Anche se domani sceglierete un altro tecnico, il software resta vostro." |
+| "Siamo troppo piccoli." | "L'applicazione è pensata per 5-30 mezzi. Sotto 5 forse non vale la pena, sopra 30 servono ottimizzazioni dedicate. Voi siete proprio nel cuore del target." |
+| "Non capiamo di software." | "Per questo c'è il contratto di manutenzione mensile. Vi consegno le chiavi ma resto disponibile a giornata o a forfait. Nessun cliente di applicazioni gestionali su misura gestisce il server in autonomia: il manutentore esiste apposta." |
+| "RENTRI ce lo fa il commercialista." | "Bene. L'applicazione prepara il FIR digitale, lo trasmette al RENTRI in sandbox per la prova, e quando avete il certificato si collega automaticamente al RENTRI di produzione. Il commercialista resta nel suo ruolo: validazione finale e DGSA, che noi non sostituiamo." |
 | "Voglio vedere altri clienti." | "Per ora siete il primo design partner del modulo rifiuti. Lo scrivo nel preventivo. In compenso il prezzo del primo cliente è scontato del 30%, e la formazione del personale è inclusa." |
 | "E se sparite?" | "Il codice è vostro su GitHub vostro. Le credenziali sono vostre. Il VPS è intestato a voi. Anche domani che sparisco, il software gira. Il rischio reale è di non avere chi ci lavora sopra, ma è lo stesso rischio di ogni fornitore IT — peggiorato dal lock-in che il SaaS impone, qui annullato." |
 

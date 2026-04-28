@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="LogiTrack — kit software per logistica e trasporto rifiuti speciali, su misura per la PMI veneta. Niente SaaS, niente canoni mensili: una fork del codice, personalizzata per te, deployata sul tuo VPS." />
+    <meta name="description" content="LogiTrack — software gestionale su misura per logistica e trasporto rifiuti speciali, dedicato alle PMI venete. Niente abbonamenti per posto: la tua applicazione, installata sul tuo server, con il tuo nome." />
     <meta name="theme-color" content="#0f4c5c" />
-    <title>LogiTrack — Kit software logistico su misura per PMI venete</title>
+    <title>LogiTrack — Software gestionale su misura per PMI venete</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -22,6 +22,7 @@
           <a href="#soluzione">La Soluzione</a>
           <a href="#funzionalita">Funzionalità</a>
           <a href="#modello">Come Lavoro</a>
+          <a href="#proprieta">Proprietà</a>
           <a href="#contatti">Contatti</a>
         </nav>
         <a href="#contatti" class="cta cta-compact">Parla con Renan</a>
@@ -33,23 +34,25 @@
       <section class="hero" aria-labelledby="hero-heading">
         <div class="container hero-grid">
           <div class="hero-copy">
-            <p class="eyebrow">Kit software per PMI di logistica e trasporto rifiuti — Veneto, Quadrante Europa, Brennero</p>
-            <h1 id="hero-heading">Il software della tua azienda. Non il SaaS di un altro.</h1>
+            <p class="eyebrow">Software gestionale su misura per PMI di logistica e trasporto rifiuti — Veneto, Quadrante Europa, Brennero</p>
+            <h1 id="hero-heading">La tua applicazione gestionale. Sul tuo server. Con il tuo nome.</h1>
             <p class="lead">
-              LogiTrack è un kit software — Go + MongoDB + Redis + Vue 3 — pensato per i trasportatori e
-              spedizionieri PMI dell'asse Verona Sud / Mantova / Brescia / Brennero. Per ogni cliente
-              parte una fork del codice: personalizzo il kit per i tuoi flussi, lo deployo sul tuo
-              VPS (o su un VPS Aruba IT intestato a te), ti consegno le chiavi. Niente cloud
-              condiviso, niente canone mensile per posto, niente lock-in.
+              LogiTrack è una soluzione gestionale dedicata, costruita su misura per i trasportatori e
+              spedizionieri PMI dell'asse Verona Sud / Mantova / Brescia / Brennero. Una applicazione web
+              pensata per la tua azienda, installata su un server intestato a te (o sulla tua
+              infrastruttura on-premise), brandizzata con il tuo nome. Niente cloud condiviso, niente
+              canone mensile per posto, niente vincolo a un fornitore unico. Tu hai il software,
+              hai i dati, hai il codice sorgente del tuo deployment depositato su un repository privato
+              a te intestato.
             </p>
             <div class="hero-ctas">
-              <a class="cta" href="#contatti">Discovery 1h gratis</a>
+              <a class="cta" href="#contatti">Incontro conoscitivo 1h gratis</a>
               <a class="cta cta-secondary" href="./demo/">Prova la dashboard</a>
             </div>
             <ul class="hero-badges" aria-label="Caratteristiche principali">
-              <li>Codice tuo, non in abbonamento</li>
-              <li>GDPR &amp; D.Lgs. 196/2003</li>
-              <li>RENTRI-ready (rifiuti speciali)</li>
+              <li>Software dedicato, non in abbonamento</li>
+              <li>Conforme GDPR &amp; D.Lgs. 196/2003</li>
+              <li>Pronto per RENTRI (rifiuti speciali)</li>
             </ul>
           </div>
           <div class="hero-visual" aria-hidden="true">
@@ -87,7 +90,7 @@
             <article class="pain">
               <div class="pain-figure">€/mese</div>
               <h3>Canoni che crescono per posto</h3>
-              <p>Più cresci, più paghi. Una squadra di 12 operatori = 12 licenze, ogni anno. Senza opzione di possedere il software.</p>
+              <p>Più cresci, più paghi. Una squadra di 12 operatori significa 12 licenze, ogni anno, all'infinito. Senza la possibilità di possedere davvero il software.</p>
             </article>
             <article class="pain">
               <div class="pain-figure">15/09/2026</div>
@@ -102,36 +105,39 @@
       <section class="band" id="soluzione" aria-labelledby="soluzione-heading">
         <div class="container">
           <p class="eyebrow">La Soluzione</p>
-          <h2 id="soluzione-heading">Una fork del kit, per te. Software che ti appartiene.</h2>
+          <h2 id="soluzione-heading">Una applicazione gestionale costruita per la tua azienda.</h2>
           <p class="section-lead">
-            Il kit è già pronto: un backend Go con ingestione webhook telematica generica, una catena di
-            custodia firmata SHA-256, un dashboard Vue 3 con mappa live, un modulo rifiuti RENTRI-ready
-            con la macchina a stati FIR completa. Quando ti ingaggio, ne creo una fork dedicata, la
-            personalizzo per i tuoi flussi reali, la deployo su un VPS intestato a te.
+            Parto da una piattaforma tecnologica già collaudata — sviluppata per il settore della logistica
+            e del trasporto rifiuti speciali — e la personalizzo sui tuoi flussi reali: anagrafiche,
+            integrazioni con la tua telematica, brand, regole operative. Il risultato è una applicazione
+            web dedicata, installata su un server intestato a te, dove tu sei l'unico utilizzatore.
           </p>
           <div class="grid grid-3 solution-grid">
             <article class="solution">
               <span class="solution-icon" aria-hidden="true">◉</span>
-              <h3>Tracking multi-vettore</h3>
+              <h3>Tracciamento multi-vettore</h3>
               <p>
-                Ingest webhook generico per Viasat, Octo, Geotab e simili. Mappa live con polilinea OSRM
-                (self-hosted) o straight-line di fallback. Geofence in/out per cantieri, depositi, terminal.
+                Ricezione automatica dei dati GPS dai principali fornitori telematici (Viasat, Octo,
+                Geotab e simili). Mappa live con percorso pianificato, geofence in ingresso e uscita per
+                cantieri, depositi, terminal intermodali.
               </p>
             </article>
             <article class="solution">
               <span class="solution-icon" aria-hidden="true">◆</span>
               <h3>Catena di custodia firmata</h3>
               <p>
-                Ogni passaggio (creato, caricato, sigillato, in transito, consegnato, eccezione) genera un
-                record append-only firmato SHA-256 col prev-hash del precedente. Tampering rilevabile.
+                Ogni passaggio del carico (creazione, caricamento, sigillo, transito, consegna,
+                eccezione) viene registrato in modo immodificabile e firmato crittograficamente. Eventuali
+                manomissioni postume sono rilevabili in audit.
               </p>
             </article>
             <article class="solution">
               <span class="solution-icon" aria-hidden="true">◈</span>
               <h3>Modulo rifiuti RENTRI-ready</h3>
               <p>
-                Macchina a stati FIR completa, validatore CER, guard Albo + autorizzazione impianto, adapter
-                RENTRI a doppio binario (queued-stub di default, HTTP live un costruttore di distanza).
+                Ciclo di vita FIR digitale completo (bozza, vidimato, consegnato, in transito, chiuso),
+                validazione automatica del codice EER, controllo iscrizione Albo Gestori Ambientali e
+                autorizzazione impianto destinatario, integrazione pronta per il sistema RENTRI.
               </p>
             </article>
           </div>
@@ -142,87 +148,127 @@
       <section class="band-alt" id="funzionalita" aria-labelledby="funzionalita-heading">
         <div class="container">
           <p class="eyebrow">Funzionalità</p>
-          <h2 id="funzionalita-heading">Cosa porta il kit "out of the box"</h2>
+          <h2 id="funzionalita-heading">Quello che è incluso fin da subito</h2>
           <div class="grid grid-3 feature-grid">
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">▲</span>
-              <h3>Mappa live WebSocket</h3>
-              <p>Marker che si muovono in tempo reale, autenticati con JWT, rate-limit per IP e per connessione, idle disconnect a 5 minuti.</p>
+              <h3>Mappa live in tempo reale</h3>
+              <p>I mezzi si muovono sulla mappa al ritmo della telematica, senza ricaricare la pagina. Connessione protetta da autenticazione, disconnessione automatica per inattività.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◯</span>
-              <h3>Geofence &amp; dwell time</h3>
-              <p>Poligoni GeoJSON tipizzati (warehouse, customs, port, depot, terminal). Allarmi automatici sulle soste anomale.</p>
+              <h3>Geofence &amp; soste anomale</h3>
+              <p>Aree poligonali tipizzate per cantieri, depositi, dogane, terminal e parcheggi. Allarmi automatici quando un mezzo sosta troppo a lungo nell'area sbagliata.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◇</span>
-              <h3>ETA dinamico</h3>
-              <p>Stima OSRM self-hosted opzionale, smoothing media-mobile su 20 campioni di velocità (5–120 km/h clip), fallback straight-line a 70 km/h.</p>
+              <h3>ETA dinamica</h3>
+              <p>Stima del tempo di arrivo aggiornata sulle ultime 20 misurazioni di velocità del mezzo. Resta affidabile anche senza copertura mobile per qualche minuto.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">▼</span>
-              <h3>FIR digitale + registro</h3>
-              <p>Stato draft → vidimato → consegnato_trasportatore → in_transito → consegnato_destinatario → chiuso, watchdog 90 giorni.</p>
+              <h3>FIR digitale e registro carico/scarico</h3>
+              <p>Ciclo completo del Formulario Identificazione Rifiuti, dalla bozza alla chiusura. Allarme automatico a 90 giorni per la copia produttore mancante.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◬</span>
-              <h3>Audit log GDPR Art. 30</h3>
-              <p>Ogni call mutante genera un record (chi, cosa, quando, IP, correlation id). Esportabile in JSONL.</p>
+              <h3>Registro completo delle attività</h3>
+              <p>Ogni operazione di modifica viene registrata con utente, data, indirizzo IP e identificativo della richiesta. Pronto per il registro dei trattamenti GDPR Art. 30, esportabile in formato standard.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◐</span>
-              <h3>Hardening produttivo</h3>
-              <p>HS256 alg-pinned, anti-SSRF su OSRM con redirect-block, rate-limit con eviction, distroless image, guard segreti deboli al boot.</p>
+              <h3>Sicurezza by design</h3>
+              <p>Autenticazione robusta, protezione anti-abuso sulle richieste, immagini di produzione minimizzate (nessuna shell esposta), rifiuto di avvio se le credenziali sono deboli. Nessuna scorciatoia di configurazione.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- 5. Come funziona (modello freelancer) -->
+      <!-- 5. Come funziona -->
       <section class="band" id="modello" aria-labelledby="modello-heading">
         <div class="container">
           <p class="eyebrow">Come Lavoro</p>
-          <h2 id="modello-heading">Quattro passi per avere un software tuo</h2>
+          <h2 id="modello-heading">Quattro passi per avere un software dedicato alla tua azienda</h2>
           <ol class="steps">
             <li>
               <span class="step-num" aria-hidden="true">1</span>
-              <h3>Discovery 1h gratis</h3>
-              <p>Caffè a Mozzecane o videochiamata. Capiamo parco mezzi, fonte telematica, gestionale fiscale, dolori reali.</p>
+              <h3>Incontro conoscitivo gratuito</h3>
+              <p>Un'ora a Mozzecane o in videochiamata. Capiamo insieme: parco mezzi, fornitore telematico, gestionale fiscale già in uso, problemi operativi quotidiani.</p>
             </li>
             <li>
               <span class="step-num" aria-hidden="true">2</span>
               <h3>Preventivo a corpo</h3>
-              <p>Progetto da 4 a 8 settimane, pagato in 3 stati di avanzamento. Contratto d'opera ex art. 2222 c.c., FatturaPA.</p>
+              <p>Progetto chiavi in mano da 4 a 8 settimane, pagato in tre stati di avanzamento. Contratto d'opera professionale ex art. 2222 c.c., fatturazione elettronica via SDI.</p>
             </li>
             <li>
               <span class="step-num" aria-hidden="true">3</span>
-              <h3>Fork + personalizzazione</h3>
-              <p>Una fork del kit dedicata a te. Adapter telematica del tuo fornitore. Deploy su VPS intestato a te (Aruba IT, Hetzner DE/FI, on-premise).</p>
+              <h3>Sviluppo personalizzato e installazione</h3>
+              <p>Sviluppo l'applicazione sui tuoi flussi reali, integro la tua telematica, applico il tuo brand. Installazione su un server intestato a te (Aruba IT, Hetzner Europa) oppure on-premise se hai già infrastruttura interna.</p>
             </li>
             <li>
               <span class="step-num" aria-hidden="true">4</span>
-              <h3>Handover + retainer</h3>
-              <p>Consegna chiavi, formazione operatori, repository di backup. Retainer mensile opzionale per aggiornamenti normativi e patch.</p>
+              <h3>Consegna + manutenzione evolutiva</h3>
+              <p>Consegna chiavi, codice sorgente del tuo deployment depositato su repository privato a te intestato, formazione del personale. Contratto di manutenzione mensile opzionale per aggiornamenti normativi (RENTRI, GDPR, ADR), patch di sicurezza, sviluppo di nuove funzionalità.</p>
             </li>
           </ol>
           <p class="section-lead" style="margin-top:2rem">
-            Niente listini riservati. Niente canone per posto. Niente cloud condiviso. Il preventivo è
-            specifico per il tuo progetto, dopo la discovery.
+            Niente listini riservati. Niente canone per posto. Niente cloud condiviso con altre aziende. Il
+            preventivo è specifico per il tuo progetto, dopo l'incontro conoscitivo.
           </p>
         </div>
       </section>
 
+      <!-- 5-bis. Cosa rimane tuo -->
+      <section class="band-soft" id="proprieta" aria-labelledby="proprieta-heading">
+        <div class="container">
+          <p class="eyebrow">La proprietà del software</p>
+          <h2 id="proprieta-heading">Chi possiede cosa, in chiaro</h2>
+          <div class="grid grid-3 solution-grid">
+            <article class="solution">
+              <span class="solution-icon" aria-hidden="true">★</span>
+              <h3>La tua applicazione è tua</h3>
+              <p>
+                L'applicazione installata, brandizzata e configurata per la tua azienda è in licenza
+                esclusiva e perpetua a te. Il codice sorgente del tuo deployment è depositato su un
+                repository Git privato intestato alla tua azienda. Se domani sceglierai un altro tecnico,
+                il codice resta tuo: un altro sviluppatore può prenderlo in mano e mantenerlo.
+              </p>
+            </article>
+            <article class="solution">
+              <span class="solution-icon" aria-hidden="true">★</span>
+              <h3>I tuoi dati sono tuoi</h3>
+              <p>
+                Spedizioni, FIR, posizioni dei mezzi, anagrafiche dei tuoi clienti finali: i dati vivono
+                sul tuo server, dietro la tua password, sotto la tua responsabilità ex GDPR (titolare
+                del trattamento). Backup giornaliero su archivio scelto da te. A fine contratto, esporto
+                tutto in formati aperti (JSON, CSV, GeoJSON) entro 30 giorni.
+              </p>
+            </article>
+            <article class="solution">
+              <span class="solution-icon" aria-hidden="true">★</span>
+              <h3>I componenti generici restano miei</h3>
+              <p>
+                Le librerie tecniche generiche — pattern di sicurezza, validatore EER, framework di base
+                — restano di mia proprietà, esattamente come uno studio di architettura riutilizza i
+                propri schemi strutturali standard tra clienti diversi. Quello che è specifico per la tua
+                azienda, è esclusivamente tuo.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <!-- 6. Cosa NON è -->
-      <section class="band-soft" aria-labelledby="not-heading">
+      <section class="band" aria-labelledby="not-heading">
         <div class="container">
           <p class="eyebrow">Onestà</p>
           <h2 id="not-heading">Cosa LogiTrack NON è</h2>
           <ul class="steps" style="list-style:none">
-            <li><strong>Non è un SaaS multi-tenant.</strong> Niente cloud condiviso. Ogni cliente ha la sua fork.</li>
-            <li><strong>Non sostituisce il gestionale fiscale.</strong> Si integra con quello che hai (export CSV, eventualmente API REST).</li>
-            <li><strong>Non è un TMS enterprise.</strong> Niente moduli che non hai chiesto. Niente bloat da listino.</li>
+            <li><strong>Non è un servizio cloud condiviso.</strong> Ogni cliente ha la sua applicazione dedicata, sul suo server.</li>
+            <li><strong>Non sostituisce il gestionale fiscale.</strong> Si integra con quello che hai già (via export CSV o, dove disponibile, API).</li>
+            <li><strong>Non è un TMS da listino enterprise.</strong> Niente moduli che non hai chiesto, niente abbonamenti dilatati, niente sigle inutili.</li>
             <li><strong>Non sostituisce il consulente DGSA né il consulente Albo.</strong> Il software prepara, valida, firma e trasmette i documenti; la responsabilità regolatoria resta in capo all'impresa.</li>
-            <li><strong>Non emette fatture.</strong> La fatturazione resta sul tuo gestionale fiscale.</li>
+            <li><strong>Non emette fatture.</strong> La fatturazione elettronica resta sul tuo gestionale fiscale: LogiTrack gli passa i dati di spedizione, non lo sostituisce.</li>
           </ul>
         </div>
       </section>

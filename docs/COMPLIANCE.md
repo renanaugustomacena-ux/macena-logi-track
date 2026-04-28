@@ -5,12 +5,15 @@ DPA / contratto d'opera. The full regulatory map is in
 [`ITALIAN-COMPLIANCE.md`](ITALIAN-COMPLIANCE.md).
 
 LogiTrack is **not a SaaS**. There is no shared multi-tenant cloud.
-Each customer engagement = one fork of the kit, deployed on the
-customer's infrastructure (or on a VPS intestato a the customer). The
-freelancer (Renan Augusto Macena) is contracted under a
-**contratto d'opera** ex art. 2222 c.c. — the data controller is the
-customer, full stop. The freelancer accesses customer data only as
-needed for the agreed maintenance scope (retainer mensile).
+Each customer receives a dedicated application installed on
+infrastructure intestated to the customer (a VPS in the customer's
+name, the customer's on-premise infrastructure, or the customer's
+private cloud). The professional (Renan Augusto Macena) is engaged
+under a **contratto d'opera** ex art. 2222 c.c. — the data controller
+remains the customer, full stop. The professional accesses customer
+data only as needed for the agreed maintenance scope (monthly
+retainer), and is registered as Responsabile del Trattamento ex
+GDPR Art. 28 in the customer's data-processor register.
 
 ## What LogiTrack helps the customer satisfy
 
@@ -65,12 +68,18 @@ needed for the agreed maintenance scope (retainer mensile).
   the customer; the customer (titolare del trattamento) is the one
   who notifies the Garante.
 - Data return in open formats (JSONL, CSV, GeoJSON) within 30 days of
-  contract termination. The freelancer commits to delivering a
-  `mongodump` archive and any per-customer overlay code at the end of
-  the engagement.
-- The customer owns the fork. End of contract = customer keeps the
-  code, the data, the deployment. The freelancer retains no copy of
-  customer data after the agreed transition window.
+  contract termination. The professional commits to delivering a
+  full database archive and any customer-specific source code at the
+  end of the engagement.
+- The customer holds an exclusive perpetual license on the personalised
+  application; the source code of the customer's deployment is
+  deposited on a private Git repository intestated to the customer.
+  End of contract = customer keeps the application, the source code,
+  the data, the deployment. The professional retains no copy of
+  customer data after the agreed transition window (60 days), and
+  retains rights only over the generic technology components of the
+  shared base platform (security libraries, audit pattern, EER
+  validator, etc.).
 
 ## Audit surface
 
