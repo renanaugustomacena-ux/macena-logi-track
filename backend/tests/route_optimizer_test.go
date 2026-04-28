@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/logitrack/backend/internal/config"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/services"
 )
 
@@ -37,9 +37,9 @@ func TestRouteOptimizerCache(t *testing.T) {
 	opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
 
 	req := services.RouteRequest{
-		Waypoints: []models.GeoPoint{
-			models.NewGeoPoint(10.793, 45.341),
-			models.NewGeoPoint(9.214, 45.450),
+		Waypoints: []logistics.GeoPoint{
+			logistics.NewGeoPoint(10.793, 45.341),
+			logistics.NewGeoPoint(9.214, 45.450),
 		},
 	}
 	r1, err := opt.OptimiseRoute(context.Background(), req)
@@ -71,9 +71,9 @@ func TestRouteOptimizerAllowList(t *testing.T) {
 	}
 	opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
 	_, err := opt.OptimiseRoute(context.Background(), services.RouteRequest{
-		Waypoints: []models.GeoPoint{
-			models.NewGeoPoint(10, 45),
-			models.NewGeoPoint(11, 46),
+		Waypoints: []logistics.GeoPoint{
+			logistics.NewGeoPoint(10, 45),
+			logistics.NewGeoPoint(11, 46),
 		},
 	})
 	if err == nil {
@@ -97,9 +97,9 @@ func TestRouteOptimizerFallback(t *testing.T) {
 	}
 	opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
 	r, err := opt.OptimiseRoute(context.Background(), services.RouteRequest{
-		Waypoints: []models.GeoPoint{
-			models.NewGeoPoint(10.793, 45.341), // Mozzecane
-			models.NewGeoPoint(10.965, 45.398), // Quadrante Europa (~ 7 km)
+		Waypoints: []logistics.GeoPoint{
+			logistics.NewGeoPoint(10.793, 45.341), // Mozzecane
+			logistics.NewGeoPoint(10.965, 45.398), // Quadrante Europa (~ 7 km)
 		},
 	})
 	if err != nil {
@@ -158,9 +158,9 @@ func TestRouteOptimizerTruckProfile(t *testing.T) {
 			opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
 			_, err := opt.OptimiseRoute(context.Background(), services.RouteRequest{
 				Vehicle: "truck",
-				Waypoints: []models.GeoPoint{
-					models.NewGeoPoint(10.793, 45.341),
-					models.NewGeoPoint(10.965, 45.398),
+				Waypoints: []logistics.GeoPoint{
+					logistics.NewGeoPoint(10.793, 45.341),
+					logistics.NewGeoPoint(10.965, 45.398),
 				},
 			})
 			if err != nil {

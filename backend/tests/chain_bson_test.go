@@ -6,7 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/services"
 )
 
@@ -50,13 +50,13 @@ func TestHashChainSurvivesBSONRoundTrip(t *testing.T) {
 	// Round-trip every record through BSON, the same way Mongo would
 	// persist and re-fetch it. After this loop, monotonic-clock data
 	// is stripped and sub-millisecond precision is gone.
-	roundtripped := make([]models.CustodyRecord, len(records))
+	roundtripped := make([]logistics.CustodyRecord, len(records))
 	for i, r := range records {
 		raw, err := bson.Marshal(r)
 		if err != nil {
 			t.Fatalf("bson marshal seq=%d: %v", r.Sequence, err)
 		}
-		var decoded models.CustodyRecord
+		var decoded logistics.CustodyRecord
 		if err := bson.Unmarshal(raw, &decoded); err != nil {
 			t.Fatalf("bson unmarshal seq=%d: %v", r.Sequence, err)
 		}

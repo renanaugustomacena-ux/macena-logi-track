@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 )
 
 // TestValidatePlate exercises the post-1994 Italian plate format and
@@ -47,7 +47,7 @@ func TestValidatePlate(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := models.ValidatePlate(tc.in) == nil
+			got := logistics.ValidatePlate(tc.in) == nil
 			if got != tc.want {
 				t.Errorf("ValidatePlate(%q) = %v, want %v", tc.in, got, tc.want)
 			}

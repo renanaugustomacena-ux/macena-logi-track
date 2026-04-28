@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/logitrack/backend/internal/config"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 )
 
 // RouteOptimizer encapsulates the OSRM integration used for route
@@ -25,13 +25,13 @@ import (
 // without a live HTTP backend.
 type RouteOptimizer interface {
 	OptimiseRoute(ctx context.Context, req RouteRequest) (*RouteResponse, error)
-	EstimateETA(ctx context.Context, from, to models.GeoPoint) (time.Duration, error)
+	EstimateETA(ctx context.Context, from, to logistics.GeoPoint) (time.Duration, error)
 }
 
 // RouteRequest is the input to OptimiseRoute. Vehicle is one of
 // "truck", "van" or "car"; AvoidTolls requests the alternate profile.
 type RouteRequest struct {
-	Waypoints  []models.GeoPoint `json:"waypoints"`
+	Waypoints  []logistics.GeoPoint `json:"waypoints"`
 	Vehicle    string            `json:"vehicle"`
 	AvoidTolls bool              `json:"avoidTolls"`
 }
@@ -99,7 +99,7 @@ func (o *OSRMOptimizer) OptimiseRoute(ctx context.Context, req RouteRequest) (*R
 	}
 	for _, wp := range req.Waypoints {
 		if len(wp.Coordinates) != 2 {
-			return nil, models.ErrInvalidGeoPoint
+			return nil, logistics.ErrInvalidGeoPoint
 		}
 	}
 
@@ -137,8 +137,8 @@ func (o *OSRMOptimizer) OptimiseRoute(ctx context.Context, req RouteRequest) (*R
 }
 
 // EstimateETA is a convenience wrapper returning only the duration.
-func (o *OSRMOptimizer) EstimateETA(ctx context.Context, from, to models.GeoPoint) (time.Duration, error) {
-	r, err := o.OptimiseRoute(ctx, RouteRequest{Waypoints: []models.GeoPoint{from, to}})
+func (o *OSRMOptimizer) EstimateETA(ctx context.Context, from, to logistics.GeoPoint) (time.Duration, error) {
+	r, err := o.OptimiseRoute(ctx, RouteRequest{Waypoints: []logistics.GeoPoint{from, to}})
 	if err != nil {
 		return 0, err
 	}

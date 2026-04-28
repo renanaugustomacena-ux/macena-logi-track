@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/logitrack/backend/internal/middleware"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/problem"
 	"github.com/logitrack/backend/internal/repository"
 )
@@ -34,7 +34,7 @@ func NewFleetHandler(repo *repository.MongoRepository) *FleetHandler {
 // CreateVehicle handles POST /api/v1/vehicles.
 func (h *FleetHandler) CreateVehicle(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	var v models.Vehicle
+	var v logistics.Vehicle
 	if err := c.ShouldBindJSON(&v); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
@@ -44,11 +44,11 @@ func (h *FleetHandler) CreateVehicle(c *gin.Context) {
 		problem.Unprocessable(c, "missing_plate", "plate is required")
 		return
 	}
-	if err := models.ValidatePlate(v.Plate); err != nil {
+	if err := logistics.ValidatePlate(v.Plate); err != nil {
 		problem.Unprocessable(c, "invalid_plate", err.Error())
 		return
 	}
-	v.Plate = models.NormalisePlate(v.Plate)
+	v.Plate = logistics.NormalisePlate(v.Plate)
 	if err := h.repo.InsertVehicle(c.Request.Context(), &v); err != nil {
 		problem.Internal(c, "create_failed", err.Error())
 		return
@@ -90,7 +90,7 @@ func (h *FleetHandler) ListVehicles(c *gin.Context) {
 // CreateDriver handles POST /api/v1/drivers.
 func (h *FleetHandler) CreateDriver(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	var d models.Driver
+	var d logistics.Driver
 	if err := c.ShouldBindJSON(&d); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
@@ -141,7 +141,7 @@ func (h *FleetHandler) ListDrivers(c *gin.Context) {
 // CreateGeofence handles POST /api/v1/geofences.
 func (h *FleetHandler) CreateGeofence(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	var g models.Geofence
+	var g logistics.Geofence
 	if err := c.ShouldBindJSON(&g); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
@@ -183,7 +183,7 @@ func (h *FleetHandler) ListGeofences(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	active := c.Query("active") == "true"
-	kind := models.GeofenceType(c.Query("type"))
+	kind := logistics.GeofenceType(c.Query("type"))
 	items, err := h.repo.ListGeofences(c.Request.Context(), claims.TenantID, active, kind, limit, offset)
 	if err != nil {
 		problem.Internal(c, "list_failed", err.Error())

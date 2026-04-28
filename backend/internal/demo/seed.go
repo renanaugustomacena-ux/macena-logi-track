@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/repository"
 	"github.com/logitrack/backend/internal/services"
 )
@@ -28,7 +28,7 @@ func Seed(ctx context.Context, mongo *repository.MongoRepository, shipments *ser
 			return err
 		}
 		s := r.ShipmentTemplate(tenantID)
-		s.Waypoints = []models.Waypoint{}
+		s.Waypoints = []logistics.Waypoint{}
 		if err := shipments.CreateShipment(ctx, s); err != nil {
 			log.Warn("demo seed create failed", zap.String("id", r.ID), zap.Error(err))
 			continue

@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/logitrack/backend/internal/config"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 )
 
 // ErrNotFound is returned when a document cannot be located.
@@ -120,7 +120,7 @@ func (r *MongoRepository) EnsureIndexes(ctx context.Context) error {
 // --- Shipment accessors -------------------------------------------------
 
 // InsertShipment persists a new shipment document.
-func (r *MongoRepository) InsertShipment(ctx context.Context, s *models.Shipment) error {
+func (r *MongoRepository) InsertShipment(ctx context.Context, s *logistics.Shipment) error {
 	now := time.Now().UTC()
 	if s.CreatedAt.IsZero() {
 		s.CreatedAt = now
@@ -131,8 +131,8 @@ func (r *MongoRepository) InsertShipment(ctx context.Context, s *models.Shipment
 }
 
 // FindShipment retrieves a shipment by id scoped to a tenant.
-func (r *MongoRepository) FindShipment(ctx context.Context, tenantID, id string) (*models.Shipment, error) {
-	var s models.Shipment
+func (r *MongoRepository) FindShipment(ctx context.Context, tenantID, id string) (*logistics.Shipment, error) {
+	var s logistics.Shipment
 	filter := bson.M{"_id": id, "tenant_id": tenantID}
 	err := r.db.Collection(CollectionShipments).FindOne(ctx, filter).Decode(&s)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -148,7 +148,7 @@ func (r *MongoRepository) FindShipment(ctx context.Context, tenantID, id string)
 // predicates. Pagination follows the cursor-free offset model; for
 // high-volume tenants the service should migrate to keyset pagination
 // on (updated_at, _id).
-func (r *MongoRepository) ListShipments(ctx context.Context, f ShipmentFilter) ([]models.Shipment, error) {
+func (r *MongoRepository) ListShipments(ctx context.Context, f ShipmentFilter) ([]logistics.Shipment, error) {
 	filter := bson.M{"tenant_id": f.TenantID}
 	if f.Status != "" {
 		filter["status"] = f.Status
@@ -176,7 +176,7 @@ func (r *MongoRepository) ListShipments(ctx context.Context, f ShipmentFilter) (
 		return nil, err
 	}
 	defer cur.Close(ctx)
-	var out []models.Shipment
+	var out []logistics.Shipment
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (r *MongoRepository) ListShipments(ctx context.Context, f ShipmentFilter) (
 
 // AppendWaypoint adds a waypoint to a shipment and refreshes the
 // current position in one atomic operation.
-func (r *MongoRepository) AppendWaypoint(ctx context.Context, tenantID, shipmentID string, wp models.Waypoint) error {
+func (r *MongoRepository) AppendWaypoint(ctx context.Context, tenantID, shipmentID string, wp logistics.Waypoint) error {
 	filter := bson.M{"_id": shipmentID, "tenant_id": tenantID}
 	update := bson.M{
 		"$push": bson.M{"waypoints": wp},
@@ -208,7 +208,7 @@ func (r *MongoRepository) AppendWaypoint(ctx context.Context, tenantID, shipment
 
 // InsertTrackingEvent persists an event. The caller has already
 // computed the sequence and hash fields.
-func (r *MongoRepository) InsertTrackingEvent(ctx context.Context, e *models.TrackingEvent) error {
+func (r *MongoRepository) InsertTrackingEvent(ctx context.Context, e *logistics.TrackingEvent) error {
 	_, err := r.db.Collection(CollectionTrackingEvents).InsertOne(ctx, e)
 	return err
 }
@@ -217,14 +217,14 @@ func (r *MongoRepository) InsertTrackingEvent(ctx context.Context, e *models.Tra
 
 // AppendCustody persists a custody record. The service layer is
 // responsible for sequencing and hash chaining.
-func (r *MongoRepository) AppendCustody(ctx context.Context, rec *models.CustodyRecord) error {
+func (r *MongoRepository) AppendCustody(ctx context.Context, rec *logistics.CustodyRecord) error {
 	_, err := r.db.Collection(CollectionCustody).InsertOne(ctx, rec)
 	return err
 }
 
 // ListCustody returns the append-only log for a shipment, ordered by
 // sequence.
-func (r *MongoRepository) ListCustody(ctx context.Context, tenantID, shipmentID string) ([]models.CustodyRecord, error) {
+func (r *MongoRepository) ListCustody(ctx context.Context, tenantID, shipmentID string) ([]logistics.CustodyRecord, error) {
 	filter := bson.M{"tenant_id": tenantID, "shipment_id": shipmentID}
 	opts := options.Find().SetSort(bson.D{{Key: "sequence", Value: 1}})
 	cur, err := r.db.Collection(CollectionCustody).Find(ctx, filter, opts)
@@ -232,7 +232,7 @@ func (r *MongoRepository) ListCustody(ctx context.Context, tenantID, shipmentID 
 		return nil, err
 	}
 	defer cur.Close(ctx)
-	var out []models.CustodyRecord
+	var out []logistics.CustodyRecord
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (r *MongoRepository) ListCustody(ctx context.Context, tenantID, shipmentID 
 func (r *MongoRepository) LatestCustodySequence(ctx context.Context, tenantID, shipmentID string) (int64, string, error) {
 	filter := bson.M{"tenant_id": tenantID, "shipment_id": shipmentID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "sequence", Value: -1}})
-	var rec models.CustodyRecord
+	var rec logistics.CustodyRecord
 	err := r.db.Collection(CollectionCustody).FindOne(ctx, filter, opts).Decode(&rec)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return 0, "", nil

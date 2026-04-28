@@ -6,7 +6,7 @@
 // disk, camelCase on the JSON wire. This lets the carrier-integration
 // team ingest webhooks with minimal translation while keeping database
 // documents compact and grep-friendly.
-package models
+package logistics
 
 import (
 	"strings"

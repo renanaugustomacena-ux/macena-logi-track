@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/logitrack/backend/internal/middleware"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/problem"
 	"github.com/logitrack/backend/internal/repository"
 	"github.com/logitrack/backend/internal/services"
@@ -28,7 +28,7 @@ func NewShipmentHandler(svc *services.ShipmentService) *ShipmentHandler {
 // Create handles POST /api/v1/shipments.
 func (h *ShipmentHandler) Create(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	var body models.Shipment
+	var body logistics.Shipment
 	if err := c.ShouldBindJSON(&body); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
@@ -97,7 +97,7 @@ func (h *ShipmentHandler) Get(c *gin.Context) {
 func (h *ShipmentHandler) AddWaypoint(c *gin.Context) {
 	claims := middleware.MustClaims(c)
 	id := c.Param("id")
-	var wp models.Waypoint
+	var wp logistics.Waypoint
 	if err := c.ShouldBindJSON(&wp); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return

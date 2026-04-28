@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/repository"
 )
 
@@ -54,7 +54,7 @@ func (s *ShipmentService) WithETA(e *ETAService) *ShipmentService { s.eta = e; r
 // the first entry of the chain-of-custody log. If a RouteOptimizer is
 // wired, the planned polyline is pre-computed so the map shows the
 // route before the first waypoint arrives.
-func (s *ShipmentService) CreateShipment(ctx context.Context, shp *models.Shipment) error {
+func (s *ShipmentService) CreateShipment(ctx context.Context, shp *logistics.Shipment) error {
 	if shp.ID == "" {
 		shp.ID = uuid.NewString()
 	}
@@ -63,7 +63,7 @@ func (s *ShipmentService) CreateShipment(ctx context.Context, shp *models.Shipme
 	}
 	if s.routes != nil && shp.RoutePolyline == "" {
 		if r, err := s.routes.OptimiseRoute(ctx, RouteRequest{
-			Waypoints: []models.GeoPoint{shp.Origin, shp.Destination},
+			Waypoints: []logistics.GeoPoint{shp.Origin, shp.Destination},
 			Vehicle:   "truck",
 		}); err == nil {
 			shp.RoutePolyline = r.Geometry
@@ -75,15 +75,15 @@ func (s *ShipmentService) CreateShipment(ctx context.Context, shp *models.Shipme
 	if err := s.mongo.InsertShipment(ctx, shp); err != nil {
 		return fmt.Errorf("create shipment: %w", err)
 	}
-	genesis := &models.CustodyRecord{
+	genesis := &logistics.CustodyRecord{
 		ID:         uuid.NewString(),
 		TenantID:   shp.TenantID,
 		ShipmentID: shp.ID,
 		Sequence:   1,
-		Action:     models.CustodyCreated,
+		Action:     logistics.CustodyCreated,
 		OccurredAt: s.clock(),
 		RecordedAt: s.clock(),
-		Actor:      models.CustodyActor{Name: "system", Role: "creator", Organisation: shp.Carrier, VATNumber: shp.Consignor.VATNumber},
+		Actor:      logistics.CustodyActor{Name: "system", Role: "creator", Organisation: shp.Carrier, VATNumber: shp.Consignor.VATNumber},
 		PrevHash:   "",
 	}
 	hash, err := computeHash(genesis)
@@ -99,12 +99,12 @@ func (s *ShipmentService) CreateShipment(ctx context.Context, shp *models.Shipme
 }
 
 // GetShipment retrieves a shipment by id.
-func (s *ShipmentService) GetShipment(ctx context.Context, tenantID, id string) (*models.Shipment, error) {
+func (s *ShipmentService) GetShipment(ctx context.Context, tenantID, id string) (*logistics.Shipment, error) {
 	return s.mongo.FindShipment(ctx, tenantID, id)
 }
 
 // ListShipments returns a page of shipments.
-func (s *ShipmentService) ListShipments(ctx context.Context, f repository.ShipmentFilter) ([]models.Shipment, error) {
+func (s *ShipmentService) ListShipments(ctx context.Context, f repository.ShipmentFilter) ([]logistics.Shipment, error) {
 	if f.Limit <= 0 || f.Limit > 500 {
 		f.Limit = 100
 	}
@@ -116,15 +116,15 @@ func (s *ShipmentService) ListShipments(ctx context.Context, f repository.Shipme
 // for direct provider webhooks. If an ETAService is wired, the
 // waypoint feeds into the smoothing filter so the next ETA query
 // reflects current traffic.
-func (s *ShipmentService) RecordWaypoint(ctx context.Context, tenantID, shipmentID string, wp models.Waypoint) error {
+func (s *ShipmentService) RecordWaypoint(ctx context.Context, tenantID, shipmentID string, wp logistics.Waypoint) error {
 	if wp.RecordedAt.IsZero() {
 		wp.RecordedAt = s.clock()
 	}
 	if len(wp.Position.Coordinates) != 2 {
-		return models.ErrInvalidGeoPoint
+		return logistics.ErrInvalidGeoPoint
 	}
 	// Capture the previous cached position BEFORE writing the new one.
-	var prev *models.Waypoint
+	var prev *logistics.Waypoint
 	if cur, err := s.redis.GetLatestPosition(ctx, shipmentID); err == nil {
 		prev = cur
 	}
@@ -137,11 +137,11 @@ func (s *ShipmentService) RecordWaypoint(ctx context.Context, tenantID, shipment
 	if s.eta != nil {
 		s.eta.UpdateSpeed(shipmentID, wp, prev)
 	}
-	evt := models.TrackingEvent{
+	evt := logistics.TrackingEvent{
 		ID:         uuid.NewString(),
 		TenantID:   tenantID,
 		ShipmentID: shipmentID,
-		Type:       models.EventPositionUpdate,
+		Type:       logistics.EventPositionUpdate,
 		Sequence:   wp.RecordedAt.UnixNano(),
 		OccurredAt: wp.RecordedAt,
 		RecordedAt: s.clock(),
@@ -158,13 +158,13 @@ func (s *ShipmentService) RecordWaypoint(ctx context.Context, tenantID, shipment
 }
 
 // ChainOfCustody returns the immutable custody log for a shipment.
-func (s *ShipmentService) ChainOfCustody(ctx context.Context, tenantID, shipmentID string) ([]models.CustodyRecord, error) {
+func (s *ShipmentService) ChainOfCustody(ctx context.Context, tenantID, shipmentID string) ([]logistics.CustodyRecord, error) {
 	return s.mongo.ListCustody(ctx, tenantID, shipmentID)
 }
 
 // AppendCustody records a new custody action, chaining hashes to the
 // previous tail.
-func (s *ShipmentService) AppendCustody(ctx context.Context, rec *models.CustodyRecord) error {
+func (s *ShipmentService) AppendCustody(ctx context.Context, rec *logistics.CustodyRecord) error {
 	seq, prev, err := s.mongo.LatestCustodySequence(ctx, rec.TenantID, rec.ShipmentID)
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (s *ShipmentService) AppendCustody(ctx context.Context, rec *models.Custody
 // Every time field is therefore normalised to UTC at millisecond
 // precision before marshalling so the in-memory and post-Mongo forms
 // produce byte-identical JSON.
-func computeHash(rec *models.CustodyRecord) (string, error) {
+func computeHash(rec *logistics.CustodyRecord) (string, error) {
 	copyRec := *rec
 	copyRec.Hash = ""
 	copyRec.OccurredAt = canonicalTime(copyRec.OccurredAt)
@@ -234,7 +234,7 @@ func canonicalTime(t time.Time) time.Time {
 // (valid, first-broken-sequence, error). A nil error and valid==true
 // means the chain is intact. Exposed for the external auditor tool and
 // the integration tests.
-func VerifyChain(records []models.CustodyRecord) (bool, int64, error) {
+func VerifyChain(records []logistics.CustodyRecord) (bool, int64, error) {
 	prev := ""
 	for i := range records {
 		r := records[i]

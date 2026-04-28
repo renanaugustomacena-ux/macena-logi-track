@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 )
 
 // ComputeHashForTest exposes the internal computeHash helper to
@@ -15,7 +15,7 @@ import (
 // computeHash returns (string, error); a marshal error here would
 // indicate a programmer mistake (introducing an un-marshalable field
 // onto CustodyRecord), so we panic for fast feedback during tests.
-func ComputeHashForTest(r *models.CustodyRecord) string {
+func ComputeHashForTest(r *logistics.CustodyRecord) string {
 	h, err := computeHash(r)
 	if err != nil {
 		panic(err)
@@ -26,6 +26,6 @@ func ComputeHashForTest(r *models.CustodyRecord) string {
 // ComputeFromForTest exposes the pure-math ETA computation path so
 // external test packages can exercise the smoother without standing up
 // a real Mongo repository.
-func (e *ETAService) ComputeFromForTest(ctx context.Context, shp *models.Shipment, current models.GeoPoint) (*ETAResult, error) {
+func (e *ETAService) ComputeFromForTest(ctx context.Context, shp *logistics.Shipment, current logistics.GeoPoint) (*ETAResult, error) {
 	return e.computeFrom(ctx, shp, current)
 }

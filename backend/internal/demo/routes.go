@@ -3,7 +3,7 @@
 // may be imported by production code paths outside the seed flow.
 package demo
 
-import "github.com/logitrack/backend/internal/models"
+import "github.com/logitrack/backend/internal/modules/logistics"
 
 // Waypoint is a (lon, lat) pair used to feed the simulator. The order
 // matches GeoJSON convention and the MongoDB 2dsphere index.
@@ -117,24 +117,24 @@ func AllRoutes() []Route {
 // ShipmentTemplate renders a minimally populated Shipment ready for
 // persistence. The tenantID is injected by the seeder so the demo is
 // scoped to its own tenant.
-func (r Route) ShipmentTemplate(tenantID string) *models.Shipment {
-	return &models.Shipment{
+func (r Route) ShipmentTemplate(tenantID string) *logistics.Shipment {
+	return &logistics.Shipment{
 		ID:        r.ID,
 		TenantID:  tenantID,
 		Reference: r.Reference,
 		Carrier:   r.Carrier,
-		Mode:      models.ModeRoad,
-		Status:    models.StatusInTransit,
-		Consignor: models.Party{
+		Mode:      logistics.ModeRoad,
+		Status:    logistics.StatusInTransit,
+		Consignor: logistics.Party{
 			Name: "LogiTrack Demo Consignor Srl", City: r.OriginName, Country: "IT",
 			VATNumber: "IT01234567890", PostalCode: "37060", Province: "VR", Address: "Via dell'Industria 1",
 		},
-		Consignee: models.Party{
+		Consignee: logistics.Party{
 			Name: "LogiTrack Demo Consignee", City: r.DestName, Country: countryOf(r.DestName),
 			VATNumber: "IT09876543210", Address: "Via del Terminal 1",
 		},
-		Origin:       models.NewGeoPoint(r.Origin.Lon, r.Origin.Lat),
-		Destination:  models.NewGeoPoint(r.Destination.Lon, r.Destination.Lat),
+		Origin:       logistics.NewGeoPoint(r.Origin.Lon, r.Origin.Lat),
+		Destination:  logistics.NewGeoPoint(r.Destination.Lon, r.Destination.Lat),
 		VehiclePlate: demoPlateFor(r.ID),
 		ADRClass:     "",
 		ATPClass:     "",

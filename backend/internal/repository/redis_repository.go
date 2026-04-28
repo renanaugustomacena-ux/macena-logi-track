@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/logitrack/backend/internal/config"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 )
 
 // Channel names used for pub/sub fan-out. The namespace prefix avoids
@@ -62,7 +62,7 @@ func (r *RedisRepository) Close() error { return r.client.Close() }
 // CacheLatestPosition upserts the last known position of a shipment
 // in Redis. The dashboard and WebSocket hub read from here rather
 // than hitting Mongo on every client reconnect.
-func (r *RedisRepository) CacheLatestPosition(ctx context.Context, shipmentID string, wp models.Waypoint) error {
+func (r *RedisRepository) CacheLatestPosition(ctx context.Context, shipmentID string, wp logistics.Waypoint) error {
 	payload, err := json.Marshal(wp)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (r *RedisRepository) CacheLatestPosition(ctx context.Context, shipmentID st
 }
 
 // GetLatestPosition returns the cached position or ErrNotFound.
-func (r *RedisRepository) GetLatestPosition(ctx context.Context, shipmentID string) (*models.Waypoint, error) {
+func (r *RedisRepository) GetLatestPosition(ctx context.Context, shipmentID string) (*logistics.Waypoint, error) {
 	key := fmt.Sprintf(KeyLatestPositionTmpl, shipmentID)
 	raw, err := r.client.Get(ctx, key).Bytes()
 	if errors.Is(err, redis.Nil) {
@@ -81,7 +81,7 @@ func (r *RedisRepository) GetLatestPosition(ctx context.Context, shipmentID stri
 	if err != nil {
 		return nil, err
 	}
-	var wp models.Waypoint
+	var wp logistics.Waypoint
 	if err := json.Unmarshal(raw, &wp); err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (r *RedisRepository) GetLatestPosition(ctx context.Context, shipmentID stri
 // PublishTrackingEvent publishes an event on the tracking channel.
 // Fan-out to connected WebSocket clients happens in the subscriber
 // loop of the websocket hub.
-func (r *RedisRepository) PublishTrackingEvent(ctx context.Context, evt models.TrackingEvent) error {
+func (r *RedisRepository) PublishTrackingEvent(ctx context.Context, evt logistics.TrackingEvent) error {
 	payload, err := json.Marshal(evt)
 	if err != nil {
 		return err

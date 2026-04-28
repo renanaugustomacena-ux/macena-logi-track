@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/services"
 )
 
@@ -20,7 +20,7 @@ func TestHashChain(t *testing.T) {
 	}
 
 	// Tamper with the interior record's notes — hash should mismatch.
-	tampered := append([]models.CustodyRecord(nil), records...)
+	tampered := append([]logistics.CustodyRecord(nil), records...)
 	tampered[1].Notes = "tampered"
 	ok2, _, err2 := services.VerifyChain(tampered)
 	if ok2 || err2 == nil {
@@ -28,40 +28,40 @@ func TestHashChain(t *testing.T) {
 	}
 
 	// Remove the head and verify we surface the mismatch at seq 2.
-	shorter := append([]models.CustodyRecord(nil), records[1:]...)
+	shorter := append([]logistics.CustodyRecord(nil), records[1:]...)
 	ok3, seq, err3 := services.VerifyChain(shorter)
 	if ok3 || err3 == nil || seq != 2 {
 		t.Fatalf("expected seq-2 break; ok=%v seq=%d err=%v", ok3, seq, err3)
 	}
 }
 
-func buildChain(start time.Time) []models.CustodyRecord {
-	base := []models.CustodyRecord{
+func buildChain(start time.Time) []logistics.CustodyRecord {
+	base := []logistics.CustodyRecord{
 		{
 			Sequence:   1,
 			ShipmentID: "S-1",
-			Action:     models.CustodyCreated,
+			Action:     logistics.CustodyCreated,
 			OccurredAt: start,
 			RecordedAt: start,
-			Actor:      models.CustodyActor{Name: "system", Role: "creator"},
+			Actor:      logistics.CustodyActor{Name: "system", Role: "creator"},
 			Notes:      "initial",
 		},
 		{
 			Sequence:   2,
 			ShipmentID: "S-1",
-			Action:     models.CustodyLoaded,
+			Action:     logistics.CustodyLoaded,
 			OccurredAt: start.Add(1 * time.Hour),
 			RecordedAt: start.Add(1 * time.Hour),
-			Actor:      models.CustodyActor{Name: "driver", Role: "driver"},
+			Actor:      logistics.CustodyActor{Name: "driver", Role: "driver"},
 			Notes:      "loaded at warehouse",
 		},
 		{
 			Sequence:   3,
 			ShipmentID: "S-1",
-			Action:     models.CustodyHandover,
+			Action:     logistics.CustodyHandover,
 			OccurredAt: start.Add(3 * time.Hour),
 			RecordedAt: start.Add(3 * time.Hour),
-			Actor:      models.CustodyActor{Name: "hub", Role: "hub"},
+			Actor:      logistics.CustodyActor{Name: "hub", Role: "hub"},
 			Notes:      "handover at hub",
 		},
 	}

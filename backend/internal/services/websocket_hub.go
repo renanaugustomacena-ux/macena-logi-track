@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/repository"
 )
 
@@ -60,7 +60,7 @@ func (h *WebSocketHub) Register(s *Subscriber) func() {
 }
 
 // Broadcast pushes an event to every matching subscriber.
-func (h *WebSocketHub) Broadcast(evt models.TrackingEvent) {
+func (h *WebSocketHub) Broadcast(evt logistics.TrackingEvent) {
 	payload, err := json.Marshal(evt)
 	if err != nil {
 		h.log.Warn("ws marshal event failed", zap.Error(err))
@@ -100,7 +100,7 @@ func (h *WebSocketHub) Run(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			var evt models.TrackingEvent
+			var evt logistics.TrackingEvent
 			if err := json.Unmarshal([]byte(msg.Payload), &evt); err != nil {
 				h.log.Warn("ws hub unmarshal", zap.Error(err))
 				continue

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/logitrack/backend/internal/config"
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/services"
 )
 
@@ -25,7 +25,7 @@ func (s *stubRouter) OptimiseRoute(_ context.Context, _ services.RouteRequest) (
 	return &services.RouteResponse{Distance: s.distanceM, Duration: s.durationS, Source: "stub"}, nil
 }
 
-func (s *stubRouter) EstimateETA(_ context.Context, _ models.GeoPoint, _ models.GeoPoint) (time.Duration, error) {
+func (s *stubRouter) EstimateETA(_ context.Context, _ logistics.GeoPoint, _ logistics.GeoPoint) (time.Duration, error) {
 	return time.Duration(s.durationS * float64(time.Second)), nil
 }
 
@@ -38,11 +38,11 @@ func TestETASmoothingMovingAverage(t *testing.T) {
 	svc := services.NewETAService(nil, nil, router, zap.NewNop())
 
 	start := time.Date(2026, 3, 1, 9, 0, 0, 0, time.UTC)
-	var prev *models.Waypoint
+	var prev *logistics.Waypoint
 	for i := 0; i < 30; i++ {
-		wp := models.Waypoint{
+		wp := logistics.Waypoint{
 			RecordedAt: start.Add(time.Duration(i) * time.Second),
-			Position:   models.NewGeoPoint(10.0+float64(i)*0.001, 45.0),
+			Position:   logistics.NewGeoPoint(10.0+float64(i)*0.001, 45.0),
 			SpeedKPH:   80,
 		}
 		svc.UpdateSpeed("S-1", wp, prev)
@@ -51,9 +51,9 @@ func TestETASmoothingMovingAverage(t *testing.T) {
 
 	// 80 km/h for 70 km ⇒ 0.875 h ≈ 3150 s. Use an OSRM Distance of 70
 	// km via the stub and confirm the ETA is "now + 0.875 h".
-	shp := &models.Shipment{ID: "S-1", TenantID: "t", Destination: models.NewGeoPoint(11, 46)}
+	shp := &logistics.Shipment{ID: "S-1", TenantID: "t", Destination: logistics.NewGeoPoint(11, 46)}
 	now := time.Now()
-	result, err := servicesComputeFrom(svc, shp, models.NewGeoPoint(10, 45))
+	result, err := servicesComputeFrom(svc, shp, logistics.NewGeoPoint(10, 45))
 	if err != nil {
 		t.Fatalf("eta error: %v", err)
 	}
@@ -71,14 +71,14 @@ func TestETABoundsClip(t *testing.T) {
 	router := &stubRouter{distanceM: 10_000, durationS: 600}
 	svc := services.NewETAService(nil, nil, router, zap.NewNop())
 	start := time.Now()
-	var prev *models.Waypoint
+	var prev *logistics.Waypoint
 	for _, kph := range []float64{0, 2, 999, 500, 80} {
-		wp := models.Waypoint{RecordedAt: start, Position: models.NewGeoPoint(10, 45), SpeedKPH: kph}
+		wp := logistics.Waypoint{RecordedAt: start, Position: logistics.NewGeoPoint(10, 45), SpeedKPH: kph}
 		svc.UpdateSpeed("S-clip", wp, prev)
 		prev = &wp
 	}
-	shp := &models.Shipment{ID: "S-clip", TenantID: "t", Destination: models.NewGeoPoint(11, 46)}
-	r, err := servicesComputeFrom(svc, shp, models.NewGeoPoint(10, 45))
+	shp := &logistics.Shipment{ID: "S-clip", TenantID: "t", Destination: logistics.NewGeoPoint(11, 46)}
+	r, err := servicesComputeFrom(svc, shp, logistics.NewGeoPoint(10, 45))
 	if err != nil {
 		t.Fatalf("eta error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestETABoundsClip(t *testing.T) {
 // servicesComputeFrom is a tiny test shim so we can exercise the
 // internal computeFrom without exposing it in the public API. It lives
 // here in the test file; the production path calls ETAService.ETA.
-func servicesComputeFrom(svc *services.ETAService, shp *models.Shipment, current models.GeoPoint) (*services.ETAResult, error) {
+func servicesComputeFrom(svc *services.ETAService, shp *logistics.Shipment, current logistics.GeoPoint) (*services.ETAResult, error) {
 	return svc.ComputeFromForTest(context.Background(), shp, current)
 }
 

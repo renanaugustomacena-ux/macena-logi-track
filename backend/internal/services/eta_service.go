@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/logitrack/backend/internal/models"
+	"github.com/logitrack/backend/internal/modules/logistics"
 	"github.com/logitrack/backend/internal/repository"
 )
 
@@ -84,7 +84,7 @@ func (e *ETAService) ETA(ctx context.Context, tenantID, shipmentID string) (*ETA
 
 // UpdateSpeed feeds a waypoint into the smoothing filter. Call this on
 // every inbound telematics event.
-func (e *ETAService) UpdateSpeed(shipmentID string, wp models.Waypoint, prev *models.Waypoint) {
+func (e *ETAService) UpdateSpeed(shipmentID string, wp logistics.Waypoint, prev *logistics.Waypoint) {
 	var kph float64
 	switch {
 	case wp.SpeedKPH > 0:
@@ -120,9 +120,9 @@ func (e *ETAService) UpdateSpeed(shipmentID string, wp models.Waypoint, prev *mo
 
 // computeFrom is the pure computation path, useful from tests with a
 // known current position.
-func (e *ETAService) computeFrom(ctx context.Context, shp *models.Shipment, current models.GeoPoint) (*ETAResult, error) {
+func (e *ETAService) computeFrom(ctx context.Context, shp *logistics.Shipment, current logistics.GeoPoint) (*ETAResult, error) {
 	rr, err := e.routes.OptimiseRoute(ctx, RouteRequest{
-		Waypoints: []models.GeoPoint{current, shp.Destination},
+		Waypoints: []logistics.GeoPoint{current, shp.Destination},
 		Vehicle:   "truck",
 	})
 	if err != nil {
