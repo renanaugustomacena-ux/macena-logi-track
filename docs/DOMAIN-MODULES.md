@@ -57,11 +57,11 @@ backend/internal/
 ├── config/                      (platform — env loader)
 ├── handlers/                    (platform — HTTP layer; mounts module routes)
 ├── integrations/                (platform — shared external clients)
-│   ├── aida/                    (Italian customs — used by logistics + wine)
-│   ├── albo/                    (Italian carrier register — used by logistics + wine)
+│   ├── aida/                    (Italian customs — used by logistics + rifiuti when transfrontaliero)
+│   ├── albo/                    (Italian carrier register — used by logistics; rifiuti has its own albo gestori check)
 │   ├── httpretry/               (shared retry+backoff)
 │   ├── rfi/                     (Italian rail — used by logistics)
-│   └── telepass/                (Italian tolls — used by logistics + wine)
+│   └── telepass/                (Italian tolls — used by logistics + rifiuti)
 ├── middleware/                  (platform — Gin middlewares)
 ├── modules/
 │   ├── logistics/               (MODULE 1 — freight visibility)
@@ -73,8 +73,17 @@ backend/internal/
 │   │   ├── driver.go
 │   │   ├── geofence.go
 │   │   └── vehicle.go
-│   └── wine/                    (MODULE 2 — wine cantine, SKELETON)
-│       └── doc.go
+│   └── rifiuti/                 (MODULE 2 — Italian SME waste-transport, RENTRI-ready)
+│       ├── doc.go
+│       ├── compliance.go        (CER/EER + Albo categoria + impianto operazione)
+│       ├── party.go             (Produttore, Trasportatore, Destinatario + Albo guards)
+│       ├── fir.go               (Formulario Identificazione Rifiuti + state machine)
+│       ├── registro.go          (registro cronologico carico/scarico, append-only)
+│       └── rentri/              (sub-package: RENTRI client adapter + queued stub)
+│           ├── doc.go
+│           ├── endpoints.go     (sandbox + production base URLs)
+│           ├── client.go        (Client interface + xFIR types)
+│           └── queued_stub.go   (default adapter until SPID/CNS cert lands)
 ├── obs/                         (platform — Prometheus + counters)
 ├── problem/                     (platform — RFC 7807 errors)
 ├── repository/                  (platform — Mongo + Redis primitives;
@@ -97,11 +106,19 @@ clarification keeps each diff reviewable.
 | # | Module | Status | First-customer profile |
 |---|---|---|---|
 | 1 | `logistics` | shipped | (not customer-led — historical baseline) |
-| 2 | `wine` | skeleton (this commit) | Valpolicella cantina, 5-50 dipendenti, exports to DE/AT |
+| 2 | `rifiuti` | shipped (entities + RENTRI client stub + tests) | Trasportatore rifiuti speciali SME, 5-30 mezzi, Albo Cat 4/5/8, Verona Sud / Mantova / Brescia corridor — first design-partner target: FRO S.r.l., Mozzecane (VR) |
 | 3 | `oil` | future | frantoio in Garda or Veneto, DOP/IGP olive oil |
 | 4 | `cheese` | future | caseificio in Asiago / Grana zone |
 | 5 | `aquaculture` | future | mitilicoltura cooperativa, costa veneta or ligure |
 | 6 | `funeral` | future | impresa funebre famigliare, network regionale |
+
+The wine vertical was originally listed as module 2 but has been
+permanently delegated to the sibling project TraceVino (Python /
+FastAPI), which already implements SIAN, MVV-E, e-label, GS1+NFC,
+HACCP, the lab adapters, and the eleven Verona DOC/DOCG
+disciplinari. LogiTrack does not duplicate that work; the kit
+boundary keeps the two products independently shippable to
+non-overlapping customer sets.
 
 Each row is a separate go-to-market wedge. They share the
 platform; they do not share entities, state machines or
@@ -120,8 +137,8 @@ Mechanical recipe (will be tightened into a generator later):
 4. Add the module-specific integrations under
    `internal/integrations/<provider>/` (only when that provider
    is genuinely shared across modules) or under
-   `internal/modules/<name>/integrations/<provider>/` (when
-   it is module-specific, like EMCS for wine).
+   `internal/modules/<name>/<provider>/` (when it is module-
+   specific, like RENTRI for rifiuti).
 5. Wire the module into the composition root in
    `cmd/server/main.go` and `internal/handlers/routes.go`.
 

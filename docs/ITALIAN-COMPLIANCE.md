@@ -349,6 +349,149 @@ quarterly, or whenever a cited regulation is amended.
 | `Driver.DrivingHours` daily counters | `internal/models/driver.go` | Reg. CE 561/2006 art. 6 (limiti di guida giornaliera, settimanale, bisettimanale) |
 | `audit_log` append-only collection | `internal/audit/audit.go` | art. 32 GDPR (Reg. UE 2016/679); D.Lgs. 138/2024 art. 24 (NIS2 misure di gestione del rischio) |
 
+## Rifiuti speciali (module 2 — RENTRI)
+
+Access date for every URL in this section: **2026-04-28** (DuckDuckGo only).
+
+### 1. Tracciabilità rifiuti — quadro nazionale
+
+- **D.Lgs. 3 aprile 2006, n. 152** (Testo Unico Ambientale), Parte IV,
+  Titolo I — disciplina generale dei rifiuti. Art. **188-bis** rinvia al
+  regolamento RENTRI per la disciplina operativa della tracciabilità.
+- **D.Lgs. 3 settembre 2020, n. 116** — recepimento Direttive UE
+  2018/851 (rifiuti) e 2018/852 (imballaggi); ha ridotto la conservazione
+  del registro carico/scarico da **5 a 3 anni** (art. 190 c. 4 TUA).
+- **Reg. (CE) 1013/2006** sulle spedizioni transfrontaliere di rifiuti —
+  attiva la Categoria 6 dell'Albo per il leg italiano del trasporto.
+
+URL TUA consolidato:
+<https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2006-04-03;152>
+
+### 2. Regolamento RENTRI
+
+- **D.M. MASE 4 aprile 2023, n. 59** — *Regolamento recante: disciplina
+  del sistema di tracciabilità dei rifiuti e del registro elettronico
+  nazionale per la tracciabilità dei rifiuti*. Pubblicato in **GU Serie
+  Generale n. 126 del 31-05-2023**, in vigore dal **15 giugno 2023**.
+  Articoli rilevanti: art. 4 (registro cronologico), art. 5 (FIR),
+  art. 8 (specifiche tecniche), art. 14 (contributo annuo),
+  art. 21 (decreti direttoriali attuativi).
+- **Decreto direttoriale MASE n. 251 del 19 dicembre 2023** — modalità
+  di compilazione dei modelli ex artt. 4 e 5 D.M. 59/2023.
+- **Specifiche tecniche xFIR v1.0** (10 febbraio 2025) — schemi XSD
+  pubblicati: `rentri-formulario-1.0.xsd`, `rentri-common-1.0.xsd`,
+  `rentri-enum-1.0.xsd`, `rentri-registri-1.0.xsd`,
+  `rentri-movimenti-1.0.xsd`, `xmldsig-core-schema.xsd`.
+- **Legge 30 dicembre 2025, n. 199** — riscrive l'art. 188-bis comma
+  3-bis TUA (esclusioni per consorzi).
+
+URL portale: <https://www.rentri.gov.it/>
+URL regolamento: <https://www.gazzettaufficiale.it/eli/id/2023/05/31/23G00065/sg>
+URL specifiche tecniche: <https://www.rentri.gov.it/decreti-direttoriali/specifiche-tecniche/specifiche-tecniche>
+URL OpenAPI v1.0: <https://api.rentri.gov.it/docs/dati-registri/v1.0>
+URL sandbox API: <https://demoapi.rentri.gov.it>
+URL sandbox portale: <https://demobackoffice.rentri.gov.it>
+
+### 3. Calendario di iscrizione (post-Legge 199/2025)
+
+| Finestra | Periodo | Soggetti | Soglia |
+| --- | --- | --- | --- |
+| 1 | 15/12/2024 → 13/02/2025 | Trasportatori, intermediari, gestori, produttori &gt; 50 dipendenti | n/a |
+| 2 | 15/06/2025 → 14/08/2025 | Produttori 11 ≤ N ≤ 50 dipendenti | 11–50 |
+| 3 | 15/12/2025 → 13/02/2026 | Produttori ≤ 10 dipendenti, soli pericolosi | ≤ 10 |
+
+Date di transizione FIR cartaceo → digitale per chi è iscritto:
+
+- **13/02/2026** — termine ultimo per passaggio operativo a FIR digitale.
+- **15/09/2026** — fine periodo di alternativa cartacea.
+
+Contributo annuo (art. 14 D.M. 59/2023): **€ 30/unità locale** per
+imprese 11–50 dipendenti, **€ 10/unità locale** per altri produttori,
+scadenza versamento **30 aprile** dell'anno successivo all'iscrizione.
+
+### 4. Catalogo Europeo Rifiuti (EER / CER)
+
+- **Decisione Commissione UE 2014/955/UE** (modifica 2000/532/CE) —
+  catalogo consolidato. **842 codici** a 6 cifre, **20 capitoli**.
+  Recepita in Italia dal **D.M. 13 ottobre 2016**.
+- Codici pericolosi: marcati con asterisco (es. `13 02 05*`).
+- Codici a specchio (mirror entries): coppia non-pericoloso /
+  pericoloso (es. `19 12 11*` vs `19 12 12`); l'attribuzione richiede
+  analisi chimica + applicazione delle caratteristiche di pericolo
+  HP1–HP15 ex **Reg. UE 1357/2014** + **Reg. UE 2017/997** (HP9).
+
+URL: <https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX:32014D0955>
+
+### 5. Albo Nazionale Gestori Ambientali
+
+- **D.M. Ambiente 3 giugno 2014, n. 120** — regolamento Albo.
+- **D.Lgs. 152/2006 art. 212** — iscrizione obbligatoria.
+
+| Categoria | Oggetto | Rinnovo |
+| --- | --- | --- |
+| 1 | Raccolta/trasporto rifiuti urbani | 5 anni |
+| 2-bis | Produttore iniziale che trasporta i propri rifiuti (non pericolosi senza limite; pericolosi ≤ 30 kg/L al giorno) | 10 anni |
+| 4 | Raccolta/trasporto rifiuti speciali NON pericolosi conto terzi | 5 anni |
+| 5 | Raccolta/trasporto rifiuti speciali pericolosi conto terzi | 5 anni |
+| 6 | Trasporto transfrontaliero in territorio italiano (Reg. UE 1013/2006) | 5 anni |
+| 8 | Intermediazione/commercio senza detenzione | 5 anni |
+
+Classi (cat. 4 e 5), in base a quantità annua trasportata:
+**A** ≥ 200 000 t · **B** 60 000–200 000 · **C** 15 000–60 000 ·
+**D** 6 000–15 000 · **E** 3 000–6 000 · **F** &lt; 3 000 t.
+
+URL: <https://www.albonazionalegestoriambientali.it/Public/Iscrizione/CategorieDettaglio>
+
+### 6. ADR per rifiuti pericolosi
+
+- **Accordo ADR ONU 2025**, recepito in Italia dal **D.Lgs. 35/2010**
+  e dai decreti MIT di aggiornamento biennale (vigente per traffico
+  nazionale dal 1° luglio 2025).
+- Obbligo del **consulente sicurezza trasporto merci pericolose
+  (DGSA)** per ogni operatore che spedisce, trasporta, carica,
+  scarica, imballa o riempie merci ADR. Esenzioni: quantità limitate
+  (LQ), quantità esenti (EQ), trasporti occasionali sotto soglia.
+  Relazione annuale obbligatoria.
+- Documenti a bordo per rifiuti pericolosi ADR: documento di
+  trasporto ADR (può coincidere con FIR se contiene UN, classe,
+  gruppo imballaggio, codice tunnel), istruzioni scritte in lingua
+  dell'equipaggio, patentino ADR del conducente, scheda di sicurezza,
+  pannelli arancio + Kemler.
+- UN frequenti per rifiuti speciali: **UN 3077** (sostanze
+  pericolose ambiente solide n.a.s.), **UN 3082** (liquide n.a.s.).
+
+### 7. Sanzioni (D.Lgs. 152/2006 art. 256 + 258)
+
+| Violazione | Non pericolosi | Pericolosi |
+| --- | --- | --- |
+| Omessa/irregolare iscrizione RENTRI | € 500 – 2.000 | € 1.000 – 3.000 |
+| FIR mancante / errato / non trasmesso | € 1.600 – 10.000 | € 1.600 – 10.000 + reclusione (art. 483 c.p.) |
+| FIR — info recuperabili da altra documentazione | € 270 – 1.550 | € 270 – 1.550 |
+| Omessa/incompleta tenuta registro C/S | € 4.000 – 20.000 | € 10.000 – 30.000 |
+| Trasporto senza Albo (art. 256 c. 1) | arresto 3-12 mesi o ammenda € 2.600 – 26.000 | arresto 6 mesi - 2 anni e ammenda € 2.600 – 26.000 |
+
+Riduzione **1/3** ex art. 258 c. 10 se la regolarizzazione avviene
+entro **60 giorni** dalla scadenza. **DL 116/2025** ha aggiunto
+sospensione patente di guida e sospensione iscrizione Albo per
+recidive su registro.
+
+### 8. Mappatura nel codice
+
+| Constant | File | Reference |
+| --- | --- | --- |
+| `RetentionYears = 3` | `internal/modules/rifiuti/registro.go` | D.Lgs. 116/2020 reform of D.Lgs. 152/2006 art. 190 c. 4 |
+| `CERCode` validator + `IsCERPericoloso` | `internal/modules/rifiuti/compliance.go` | Decisione 2014/955/UE; recepimento D.M. 13/10/2016 |
+| `AlboCategoria` (1, 2-bis, 4, 5, 6, 8, 9, 10) | `internal/modules/rifiuti/compliance.go` | D.M. 120/2014; D.Lgs. 152/2006 art. 212 |
+| `AlboClasse` A–F | `internal/modules/rifiuti/compliance.go` | D.M. 120/2014 art. 9 |
+| `ImpiantoOperazione` (R1–R13, D1–D15) | `internal/modules/rifiuti/compliance.go` | D.Lgs. 152/2006 Allegati B + C (Dir. 2008/98/CE Annex I + II) |
+| `HPClass` (HP1–HP15) | `internal/modules/rifiuti/fir.go` | Reg. UE 1357/2014 + Reg. UE 2017/997 (HP9) |
+| `Trasportatore.CanCarry` | `internal/modules/rifiuti/party.go` | D.Lgs. 152/2006 art. 212 + scopes per categoria |
+| `Destinatario.CanReceive` | `internal/modules/rifiuti/party.go` | D.Lgs. 152/2006 art. 208 (autorizzazione impianti) |
+| `FIR.Validate` + `firTransitions` | `internal/modules/rifiuti/fir.go` | D.Lgs. 152/2006 art. 193 + D.M. 59/2023 art. 5 |
+| `FIR.CopiaProduttoreOverdue` (90 giorni) | `internal/modules/rifiuti/fir.go` | D.Lgs. 152/2006 art. 188-bis c. 4 |
+| `rentri.Client` interface + `QueuedStub` | `internal/modules/rifiuti/rentri/` | D.M. 59/2023 art. 8 + spec xFIR v1.0 |
+| Sandbox URL `demoapi.rentri.gov.it` | `internal/modules/rifiuti/rentri/endpoints.go` | RENTRI portale (2026-04-28) |
+
 ## Gaps / out-of-scope
 
 - No generation of the T1/T2 XML body — LogiTrack tracks the lifecycle

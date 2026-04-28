@@ -3,16 +3,30 @@
 **Traccia ogni spedizione in tempo reale, dal Quadrante Europa a tutta l'UE.**
 **Track every shipment in real time, from Quadrante Europa to the whole EU.**
 
-LogiTrack is a supply-chain visibility platform engineered for the Verona
-intermodal corridor: carriers, shippers, customs brokers and freight
-forwarders who live along the A22 Autostrada del Brennero and ship through
-the Quadrante Europa freight terminal (8+ million tonnes/year, second-largest
-intermodal hub in Europe).
+LogiTrack is a multi-tenant Italian-regulatory-aware logistics kit built
+around a shared Go + MongoDB + Redis platform plus per-vertical domain
+modules. Two verticals are currently in the tree:
 
-The platform ingests telematics data (Viasat, Octo, Geotab), CMR electronic
-consignment notes, AIDA customs declarations, and intermodal rail slots from
-RFI, unifying them into a real-time map, a tamper-evident chain-of-custody
-log, and SLA analytics.
+- **`logistics`** — supply-chain visibility for carriers, shippers and
+  freight forwarders along the A22 Autostrada del Brennero corridor and
+  through the Quadrante Europa intermodal terminal. Ingests telematica
+  (Viasat, Octo, Geotab), CMR notes, AIDA customs declarations, RFI rail
+  slots; unifies them into a real-time map, a SHA-256 chain-of-custody
+  log, and SLA analytics. Pitch in [`docs/PITCH.md`](docs/PITCH.md), pricing
+  in [`docs/PRICING.md`](docs/PRICING.md).
+- **`rifiuti`** — RENTRI-ready waste-transport vertical for trasportatori
+  di rifiuti speciali iscritti Albo cat. 4/5/8. Owns the FIR
+  (Formulario Identificazione Rifiuti) state machine, the registro
+  cronologico carico/scarico, the EER catalogue, the Albo + impianto
+  authorisation guards and the RENTRI client adapter (queued-stub default,
+  HTTP-live one constructor away). Pitch in
+  [`docs/PITCH-RIFIUTI.md`](docs/PITCH-RIFIUTI.md), pricing in
+  [`docs/PRICING-RIFIUTI.md`](docs/PRICING-RIFIUTI.md), regulatory anchors
+  in [`docs/MODULE-RIFIUTI.md`](docs/MODULE-RIFIUTI.md).
+
+The kit doctrine is documented in [`docs/DOMAIN-MODULES.md`](docs/DOMAIN-MODULES.md):
+shared platform + leaf modules + per-customer overlay; modules never
+import each other.
 
 ---
 
