@@ -1,83 +1,158 @@
-# LogiTrack — Operations Runbook
+# LogiTrack — Per-Fork Operations Runbook
 
-## Daily
-- Automated CI on every commit (`.github/workflows/ci.yml`).
-- Trivy rescan of production image nightly via bot.
-- Automated Mongo + oplog snapshot 02:00 Europe/Rome.
-- Alertmanager daily summary to the on-call channel.
+This runbook covers a single deployed fork on a single VPS / single
+Kubernetes namespace. Multi-customer aggregation is not a kit
+concern; each customer fork has its own runbook copy.
 
-## Smoke-test (manual, ~3 min)
+## Boot smoke-test (manual, ~3 min)
+
 ```bash
-curl -sf http://localhost:8080/api/health | jq  # expect status:ok, deps populated
-curl -sf http://localhost:8080/metrics | head -5 # expect logitrack_build_info
-docker compose --profile demo up -d --wait
-sleep 30
-curl -sf http://localhost:8080/api/v1/shipments  -H "Authorization: Bearer $DEMO_JWT" | jq '.items | length'  # expect 3
+curl -sf http://localhost:8080/api/health | jq
+# expect: { status:"ok", dependencies:{ mongodb:"ok", redis:"ok" } }
+
+curl -sf http://localhost:8080/api/ready | jq
+# expect: { status:"ready" } once seed (if SEED_DEMO=true) finishes.
+
+curl -sf http://localhost:8080/metrics | head -5
+# expect: logitrack_build_info gauge, http counters
+
+# Login + smoke shipment fetch
+TOKEN=$(curl -sf http://localhost:8080/api/v1/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"username":"<demo>","password":"<demo>"}' | jq -r .accessToken)
+curl -sf http://localhost:8080/api/v1/shipments \
+  -H "Authorization: Bearer $TOKEN" | jq '.items | length'
 ```
 
 ## Backup & restore
 
 ### MongoDB
-- **Backup:** `docker exec logitrack-mongodb mongodump --db logitrack --out /data/backup/$(date +%F)` (daily full).
-- **Oplog archiving:** `--oplog` flag on mongodump.
-- **Restore:** `mongorestore --drop /data/backup/YYYY-MM-DD/logitrack`.
-- **Test:** monthly restore drill (see OPERATIONS-CADENCE).
+
+- **Daily full**:
+  ```bash
+  docker exec logitrack-mongodb mongodump \
+    --authenticationDatabase admin \
+    -u "$MONGO_ROOT_USERNAME" -p "$MONGO_ROOT_PASSWORD" \
+    --db logitrack --out /data/backup/$(date +%F)
+  ```
+- **Restore**:
+  ```bash
+  docker exec logitrack-mongodb mongorestore \
+    --authenticationDatabase admin \
+    -u "$MONGO_ROOT_USERNAME" -p "$MONGO_ROOT_PASSWORD" \
+    --drop /data/backup/YYYY-MM-DD/logitrack
+  ```
+- **Off-host copy**: rsync the `/data/backup/` directory to S3 / B2 /
+  customer NAS via cron.
+- **Test**: monthly restore drill on a fresh container; verify
+  `services.VerifyChain` passes on a sample tenant.
 
 ### Redis
-- Treated as rebuildable; the cache repopulates from Mongo on miss.
 
-## Alert routing
-- `error_rate > 1%` 5 min → warning → on-call channel.
-- `error_rate > 5%` 5 min → critical → page on-call.
-- `p95_latency > slo * 1.5` 10 min → warning.
-- `unauthenticated_401_rate > 10%` 5 min → warning (brute-force probe).
-- `ws_connections_active` flapping > 50% 15 min → warning.
-- `database_pool_exhaustion` → critical.
+- Treated as rebuildable: position cache repopulates from Mongo on
+  miss; pub/sub channel is fire-and-forget. No backup needed unless
+  the customer adds Redis-persisted data later.
 
 ## Common incidents
 
-### "DB pool exhausted"
-1. Check `logitrack_http_requests_total` trend — sudden spike?
-2. `docker exec logitrack-mongodb mongosh --eval 'db.currentOp()'` — long-running queries?
-3. Raise `MONGO_MAX_POOL`, redeploy. Root cause usually a missing
-   index; confirm indexes via `EnsureIndexes` log line at boot.
+### "Backend boot fails with config error"
 
-### "WebSocket clients disconnect every 5 minutes"
-- Expected: idle disconnect at `WS_IDLE_TIMEOUT` = 5 min.
-- Clients must send `{"op":"ping"}` or respond to server pings.
+Most production-guard failures are about secrets:
 
-### "OSRM 502"
-- `OSRM_BASE_URL` unreachable. Fall back to in-memory estimate is
-  automatic; `source="fallback"` in the response announces this.
-- If the public demo is rate-limited, switch to the self-hosted OSRM
-  (production deployment) by updating `OSRM_BASE_URL` and adding the
-  host to `OSRM_ALLOWED_HOSTS`.
-
-### "Chain-of-custody verification fails"
-- Run `services.VerifyChain` audit CLI (planned `cmd/verifychain`).
-- Identify first-broken sequence; inspect `chain_of_custody` collection
-  for manual edits. Appendicate a `CustodyException` entry with the
-  actor explaining the drift. NEVER patch the historical record.
-
-## Emergency shutdown
-```bash
-docker compose down
-# or, leave Mongo/Redis running:
-docker compose stop logitrack-backend logitrack-frontend logitrack-simulator
+```
+config: JWT_SECRET is a known-weak placeholder
+config: JWT_SECRET must be >= 32 characters in production, got <N>
+config: MONGO_URI lacks credentials in production (must be mongodb://user:pass@host)
+config: REDIS_URL lacks credentials in production
+config: LOGITRACK_IDENTITY_BACKEND=memory but ... DEMO_PASSWORD is empty or weak
 ```
 
-## Emergency rollback
+Fix the offending env var, redeploy. Do not lower `APP_ENV` away from
+`production` to bypass — the guard exists for a reason.
+
+### "DB pool exhausted"
+
+1. Check `logitrack_http_requests_total` — sudden spike?
+2. Check long-running queries:
+   ```bash
+   docker exec logitrack-mongodb mongosh -u "$MONGO_ROOT_USERNAME" \
+     -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin \
+     --eval 'db.currentOp()'
+   ```
+3. Raise `MONGO_MAX_POOL`, redeploy. Root cause is usually a missing
+   index; confirm the `EnsureIndexes` log line at boot.
+
+### "WebSocket clients disconnect every 5 minutes"
+
+Expected: idle disconnect at `WS_IDLE_TIMEOUT` (default 5 min).
+Clients must send `{"op":"ping"}` or respond to server pings.
+
+### "OSRM unreachable / 502"
+
+- OSRM is opt-in. With `OSRM_BASE_URL` empty (kit default) the
+  optimiser silently falls back to a great-circle estimate after a
+  one-shot WARN.
+- If OSRM is configured and unreachable, calls fall back to
+  straight-line on a per-call basis (`source: "fallback"` in the
+  response).
+- The HTTP client refuses redirects, so OSRM serving 30x will be
+  treated as an upstream error → fallback. By design.
+
+### "Chain-of-custody verification fails"
+
+Run the verifier:
+
+```go
+ok, brokenSeq, err := services.VerifyChain(records)
+```
+
+If `ok==false`, the first broken sequence is `brokenSeq`. Inspect
+the `chain_of_custody` collection for manual edits. **Never patch
+the historical record.** Append a `CustodyException` entry with the
+actor explaining the drift.
+
+### "RENTRI vidimazione blocked"
+
+- Default adapter is `rentri.QueuedStub`; if you see "rentri_failed"
+  errors, the stub itself is buggy or the FIR shape is invalid.
+- Live HTTP adapter (when wired) errors map to the RENTRI sandbox /
+  production endpoint behaviour. Check the log for the upstream
+  status code.
+- Idempotency keys are deterministic per `(tenantID, firID)` — the
+  same FIR retried yields the same numero.
+
+## Emergency procedures
+
+### Emergency stop
+```bash
+docker compose stop logitrack-backend logitrack-frontend logitrack-simulator
+# Mongo + Redis stay up; no data loss
+```
+
+### Emergency rollback
 ```bash
 docker compose pull logitrack-backend:<previous-tag>
 docker compose up -d --no-deps logitrack-backend
 ```
 
-## Telepass / AISCAT code refresh
-- Cadence: quarterly.
-- Source: https://www.aiscat.it → gazzettino.
-- Manual import into `telepass_codes` collection via a Mongo script
-  (see `scripts/refresh-telepass.js`, planned).
+### Full teardown (data preserved)
+```bash
+docker compose down
+# volumes logitrack-mongo-data and logitrack-mongo-config are kept
+```
 
-## MODUS_OPERANDI word count
-- G12 requires ≥ 13,000 words. Verify with
-  `wc -w docs/MODUS_OPERANDI.md` before tagging a release.
+### Full teardown (data WIPED — destructive)
+```bash
+docker compose down -v
+# Volumes deleted. ONLY in test / staging.
+```
+
+## Maintenance cadence (per-fork suggestion)
+
+| Cadence | Task |
+| --- | --- |
+| Daily | Mongo dump + off-host copy. Monitor `/api/health`. |
+| Weekly | Review `audit_log` dropped-record counter. Review error logs. |
+| Monthly | Restore drill on fresh container. `services.VerifyChain` audit on a sample. Review `govulncheck` output. |
+| Quarterly | Rotate `JWT_SECRET`. Rotate Mongo + Redis passwords. Review `LOGITRACK_IDENTITY_DEMO_PASSWORD` (or move to IDP). |
+| On regulation change | Update `ITALIAN-COMPLIANCE.md`, push patch to all forks via the kit changelog. |

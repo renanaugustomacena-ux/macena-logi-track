@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="LogiTrack — visibilità supply-chain in tempo reale per il Quadrante Europa di Verona e il corridoio del Brennero. Tracking intermodale, dogana AIDA, chain-of-custody immutabile." />
+    <meta name="description" content="LogiTrack — kit software per logistica e trasporto rifiuti speciali, su misura per la PMI veneta. Niente SaaS, niente canoni mensili: una fork del codice, personalizzata per te, deployata sul tuo VPS." />
     <meta name="theme-color" content="#0f4c5c" />
-    <title>LogiTrack — Traccia Ogni Spedizione in Tempo Reale</title>
+    <title>LogiTrack — Kit software logistico su misura per PMI venete</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -21,10 +21,10 @@
           <a href="#problema">Il Problema</a>
           <a href="#soluzione">La Soluzione</a>
           <a href="#funzionalita">Funzionalità</a>
-          <a href="#prezzi">Prezzi</a>
+          <a href="#modello">Come Lavoro</a>
           <a href="#contatti">Contatti</a>
         </nav>
-        <a href="#contatti" class="cta cta-compact">Richiedi Demo</a>
+        <a href="#contatti" class="cta cta-compact">Parla con Renan</a>
       </div>
     </header>
 
@@ -33,21 +33,23 @@
       <section class="hero" aria-labelledby="hero-heading">
         <div class="container hero-grid">
           <div class="hero-copy">
-            <p class="eyebrow">Piattaforma di visibilità supply-chain per il corridoio del Brennero</p>
-            <h1 id="hero-heading">Traccia Ogni Spedizione in Tempo Reale</h1>
+            <p class="eyebrow">Kit software per PMI di logistica e trasporto rifiuti — Veneto, Quadrante Europa, Brennero</p>
+            <h1 id="hero-heading">Il software della tua azienda. Non il SaaS di un altro.</h1>
             <p class="lead">
-              Dal Quadrante Europa di Verona — secondo hub intermodale d'Europa con oltre 8 milioni di tonnellate
-              l'anno — fino ai terminali di Monaco, Rotterdam e Barcellona. LogiTrack unisce telematica, dogana AIDA,
-              prenotazioni ferroviarie RFI e chain-of-custody a prova di manomissione in un'unica dashboard operativa.
+              LogiTrack è un kit software — Go + MongoDB + Redis + Vue 3 — pensato per i trasportatori e
+              spedizionieri PMI dell'asse Verona Sud / Mantova / Brescia / Brennero. Per ogni cliente
+              parte una fork del codice: personalizzo il kit per i tuoi flussi, lo deployo sul tuo
+              VPS (o su un VPS Aruba IT intestato a te), ti consegno le chiavi. Niente cloud
+              condiviso, niente canone mensile per posto, niente lock-in.
             </p>
             <div class="hero-ctas">
-              <a class="cta" href="#contatti">Prova LogiTrack 30 Giorni</a>
-              <a class="cta cta-secondary" href="#come-funziona">Come Funziona</a>
+              <a class="cta" href="#contatti">Discovery 1h gratis</a>
+              <a class="cta cta-secondary" href="#modello">Come funziona</a>
             </div>
             <ul class="hero-badges" aria-label="Caratteristiche principali">
-              <li>100% Cloud Sovrano Italiano</li>
+              <li>Codice tuo, non in abbonamento</li>
               <li>GDPR &amp; D.Lgs. 196/2003</li>
-              <li>Integrazione Telepass &amp; Viasat</li>
+              <li>RENTRI-ready (rifiuti speciali)</li>
             </ul>
           </div>
           <div class="hero-visual" aria-hidden="true">
@@ -59,7 +61,7 @@
               <svg class="route" viewBox="0 0 400 240" aria-hidden="true">
                 <path d="M40 200 Q160 80 220 140 T360 40" fill="none" stroke="#1d4ed8" stroke-width="3" stroke-dasharray="6 6" />
               </svg>
-              <div class="map-label">Verona QE → Brennero → Monaco · 412 km · ETA 6h 40'</div>
+              <div class="map-label">Mozzecane → Quadrante Europa → Brennero · live tracking</div>
             </div>
           </div>
         </div>
@@ -69,33 +71,28 @@
       <section class="band-soft" id="problema" aria-labelledby="problema-heading">
         <div class="container">
           <p class="eyebrow">Il Problema</p>
-          <h2 id="problema-heading">Il 73% delle imprese gestisce la supply-chain con fogli Excel</h2>
+          <h2 id="problema-heading">Il gestionale generico non vede dove sono i tuoi mezzi</h2>
           <p class="section-lead">
-            Sul corridoio Verona–Mantova–Trento–Bolzano transitano ogni anno oltre 56 miliardi di euro di
-            interscambio commerciale. Nonostante questo, la maggior parte degli spedizionieri e dei committenti
-            non ha visibilità in tempo reale sui propri carichi: le informazioni arrivano ore dopo gli eventi,
-            spesso per telefono o WhatsApp.
+            Le PMI di trasporto e spedizione del Veneto convivono ogni giorno con tre dolori: visibilità
+            frammentata fra portali del produttore telematico, catena di custodia su carta più WhatsApp, e
+            software di mercato venduti come canone mensile per posto che bloccano i tuoi dati nel cloud
+            del vendor.
           </p>
-          <div class="grid grid-4 pain-grid">
+          <div class="grid grid-3 pain-grid">
             <article class="pain">
-              <div class="pain-figure">73%</div>
-              <h3>Spreadsheet diffusi</h3>
-              <p>imprese che tracciano spedizioni con fogli Excel o cartacei, fonte: Osservatorio Contract Logistics.</p>
+              <div class="pain-figure">3+</div>
+              <h3>Schermate per un carico</h3>
+              <p>Il dispatcher salta tra portale del produttore telematico, gestionale fiscale, fogli di calcolo. Errori e ritardi inevitabili.</p>
             </article>
             <article class="pain">
-              <div class="pain-figure">8 Mt/a</div>
-              <h3>Volumi al Quadrante</h3>
-              <p>merci che attraversano il Quadrante Europa, un hub che coordina strada e rotaia su scala europea.</p>
+              <div class="pain-figure">€/mese</div>
+              <h3>Canoni che crescono per posto</h3>
+              <p>Più cresci, più paghi. Una squadra di 12 operatori = 12 licenze, ogni anno. Senza opzione di possedere il software.</p>
             </article>
             <article class="pain">
-              <div class="pain-figure">€56 mld</div>
-              <h3>Interscambio corridoio</h3>
-              <p>Verona–Mantova–Trento–Bolzano: il corridoio del Brennero concentra commercio e rischio di ritardo.</p>
-            </article>
-            <article class="pain">
-              <div class="pain-figure">&lt;12%</div>
-              <h3>Telematica integrata</h3>
-              <p>PMI di autotrasporto che integrano realmente il dato telematico con la pianificazione operativa.</p>
+              <div class="pain-figure">15/09/2026</div>
+              <h3>Fine del FIR cartaceo</h3>
+              <p>Per i trasportatori di rifiuti speciali la deadline RENTRI è dura. I gestionali "rifiuti" partono da listini riservati e iter commerciali lunghi.</p>
             </article>
           </div>
         </div>
@@ -105,273 +102,171 @@
       <section class="band" id="soluzione" aria-labelledby="soluzione-heading">
         <div class="container">
           <p class="eyebrow">La Soluzione</p>
-          <h2 id="soluzione-heading">Una sola dashboard per strada, ferrovia e dogana</h2>
+          <h2 id="soluzione-heading">Una fork del kit, per te. Software che ti appartiene.</h2>
           <p class="section-lead">
-            LogiTrack ingerisce in tempo reale i dati da Viasat, Octo, Geotab, webhook CMR elettronici e i
-            feed AIDA delle dogane. Ogni spedizione diventa un oggetto digitale ricco: posizione, timeline,
-            catena di custodia firmata, ETA calcolato con OSRM e mappe Leaflet self-hosted.
+            Il kit è già pronto: un backend Go con ingestione webhook telematica generica, una catena di
+            custodia firmata SHA-256, un dashboard Vue 3 con mappa live, un modulo rifiuti RENTRI-ready
+            con la macchina a stati FIR completa. Quando ti ingaggio, ne creo una fork dedicata, la
+            personalizzo per i tuoi flussi reali, la deployo su un VPS intestato a te.
           </p>
           <div class="grid grid-3 solution-grid">
             <article class="solution">
               <span class="solution-icon" aria-hidden="true">◉</span>
-              <h3>Visibilità Multi-Vettore</h3>
+              <h3>Tracking multi-vettore</h3>
               <p>
-                Un'unica API per tutti i vettori: dalla flotta aziendale ai padroncini del Distretto Mobile di
-                Verona, fino agli operatori intermodali del Quadrante Europa.
-              </p>
-            </article>
-            <article class="solution">
-              <span class="solution-icon" aria-hidden="true">◈</span>
-              <h3>Dogana AIDA Integrata</h3>
-              <p>
-                Presentazione T1/T2, gestione MRN e notifiche di svincolo direttamente in timeline. Cross-border
-                Italia–Austria–Germania senza fogli di calcolo né e-mail sparse.
+                Ingest webhook generico per Viasat, Octo, Geotab e simili. Mappa live con polilinea OSRM
+                (self-hosted) o straight-line di fallback. Geofence in/out per cantieri, depositi, terminal.
               </p>
             </article>
             <article class="solution">
               <span class="solution-icon" aria-hidden="true">◆</span>
-              <h3>Chain-of-Custody Immutabile</h3>
+              <h3>Catena di custodia firmata</h3>
               <p>
-                Ogni passaggio — carico, sigillo, handover, scarico — viene firmato e incatenato con SHA-256.
-                Audit trail a norma GDPR e compatibile con richieste di revisione di Agenzia delle Entrate.
+                Ogni passaggio (creato, caricato, sigillato, in transito, consegnato, eccezione) genera un
+                record append-only firmato SHA-256 col prev-hash del precedente. Tampering rilevabile.
+              </p>
+            </article>
+            <article class="solution">
+              <span class="solution-icon" aria-hidden="true">◈</span>
+              <h3>Modulo rifiuti RENTRI-ready</h3>
+              <p>
+                Macchina a stati FIR completa, validatore CER, guard Albo + autorizzazione impianto, adapter
+                RENTRI a doppio binario (queued-stub di default, HTTP live un costruttore di distanza).
               </p>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- 4+5. Funzionalità -->
+      <!-- 4. Funzionalità -->
       <section class="band-alt" id="funzionalita" aria-labelledby="funzionalita-heading">
         <div class="container">
           <p class="eyebrow">Funzionalità</p>
-          <h2 id="funzionalita-heading">Tutto ciò che serve per gestire spedizioni complesse</h2>
+          <h2 id="funzionalita-heading">Cosa porta il kit "out of the box"</h2>
           <div class="grid grid-3 feature-grid">
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">▲</span>
-              <h3>Mappa Live</h3>
-              <p>WebSocket a 1 Hz: la posizione dei mezzi aggiornata senza ricaricare, anche su 4G marginale.</p>
+              <h3>Mappa live WebSocket</h3>
+              <p>Marker che si muovono in tempo reale, autenticati con JWT, rate-limit per IP e per connessione, idle disconnect a 5 minuti.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◯</span>
-              <h3>Geofence &amp; Dwell Time</h3>
-              <p>Allarmi automatici quando un mezzo sosta troppo a lungo nel terminal, nel depot o in dogana.</p>
+              <h3>Geofence &amp; dwell time</h3>
+              <p>Poligoni GeoJSON tipizzati (warehouse, customs, port, depot, terminal). Allarmi automatici sulle soste anomale.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◇</span>
-              <h3>ETA Dinamica</h3>
-              <p>Stima via OSRM self-hosted, corretta con storico traffico A22 e meteo sul Brennero.</p>
+              <h3>ETA dinamico</h3>
+              <p>Stima OSRM self-hosted opzionale, smoothing media-mobile su 20 campioni di velocità (5–120 km/h clip), fallback straight-line a 70 km/h.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">▼</span>
-              <h3>Slot Intermodali RFI</h3>
-              <p>Prenotazione e monitoraggio dei treni merci al Quadrante Europa e Interporto Bologna.</p>
+              <h3>FIR digitale + registro</h3>
+              <p>Stato draft → vidimato → consegnato_trasportatore → in_transito → consegnato_destinatario → chiuso, watchdog 90 giorni.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◬</span>
-              <h3>Portale Committenti</h3>
-              <p>Accesso limitato per i clienti finali: vedono solo le loro spedizioni, in italiano o in inglese.</p>
+              <h3>Audit log GDPR Art. 30</h3>
+              <p>Ogni call mutante genera un record (chi, cosa, quando, IP, correlation id). Esportabile in JSONL.</p>
             </article>
             <article class="feature">
               <span class="feature-icon" aria-hidden="true">◐</span>
-              <h3>Analitiche &amp; SLA</h3>
-              <p>Report On-Time-In-Full, costo per km, puntualità per vettore e per tratta. Export CSV e API.</p>
+              <h3>Hardening produttivo</h3>
+              <p>HS256 alg-pinned, anti-SSRF su OSRM con redirect-block, rate-limit con eviction, distroless image, guard segreti deboli al boot.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- 6. Come funziona -->
-      <section class="band" id="come-funziona" aria-labelledby="come-funziona-heading">
+      <!-- 5. Come funziona (modello freelancer) -->
+      <section class="band" id="modello" aria-labelledby="modello-heading">
         <div class="container">
-          <p class="eyebrow">Come Funziona</p>
-          <h2 id="come-funziona-heading">Quattro passi per essere operativi in una settimana</h2>
+          <p class="eyebrow">Come Lavoro</p>
+          <h2 id="modello-heading">Quattro passi per avere un software tuo</h2>
           <ol class="steps">
             <li>
               <span class="step-num" aria-hidden="true">1</span>
-              <h3>Connetti Telematica e Vettori</h3>
-              <p>Integrazioni pronte con Viasat, Octo, Geotab, Telepass e i principali gateway CMR elettronici.</p>
+              <h3>Discovery 1h gratis</h3>
+              <p>Caffè a Mozzecane o videochiamata. Capiamo parco mezzi, fonte telematica, gestionale fiscale, dolori reali.</p>
             </li>
             <li>
               <span class="step-num" aria-hidden="true">2</span>
-              <h3>Importa Anagrafiche</h3>
-              <p>Mittenti, destinatari, mezzi, autisti: CSV o API. Validazione P.IVA e codice fiscale integrata.</p>
+              <h3>Preventivo a corpo</h3>
+              <p>Progetto da 4 a 8 settimane, pagato in 3 stati di avanzamento. Contratto d'opera ex art. 2222 c.c., FatturaPA.</p>
             </li>
             <li>
               <span class="step-num" aria-hidden="true">3</span>
-              <h3>Crea la Prima Spedizione</h3>
-              <p>Origine, destinazione, modalità, ETA. LogiTrack calcola la rotta ottimale e avvia il tracking.</p>
+              <h3>Fork + personalizzazione</h3>
+              <p>Una fork del kit dedicata a te. Adapter telematica del tuo fornitore. Deploy su VPS intestato a te (Aruba IT, Hetzner DE/FI, on-premise).</p>
             </li>
             <li>
               <span class="step-num" aria-hidden="true">4</span>
-              <h3>Distribuisci la Visibilità</h3>
-              <p>Invita committenti e subappaltatori con ruoli granulari. Ognuno vede solo ciò che gli compete.</p>
+              <h3>Handover + retainer</h3>
+              <p>Consegna chiavi, formazione operatori, repository di backup. Retainer mensile opzionale per aggiornamenti normativi e patch.</p>
             </li>
           </ol>
-        </div>
-      </section>
-
-      <!-- 7. Prezzi -->
-      <section class="band-soft" id="prezzi" aria-labelledby="prezzi-heading">
-        <div class="container">
-          <p class="eyebrow">Prezzi</p>
-          <h2 id="prezzi-heading">Un piano per ogni dimensione di operatore</h2>
-          <p class="section-lead">
-            Prezzi trasparenti in euro, IVA esclusa. Fatturazione mensile, senza vincoli pluriennali.
+          <p class="section-lead" style="margin-top:2rem">
+            Niente listini riservati. Niente canone per posto. Niente cloud condiviso. Il preventivo è
+            specifico per il tuo progetto, dopo la discovery.
           </p>
-          <div class="grid grid-3 pricing-grid">
-            <article class="pricing">
-              <h3>Starter</h3>
-              <p class="price"><span>€199</span> / mese</p>
-              <ul>
-                <li>Fino a 10 spedizioni / giorno</li>
-                <li>Mappa live &amp; timeline</li>
-                <li>1 integrazione telematica</li>
-                <li>2 utenti operativi</li>
-                <li>Supporto via e-mail 8x5</li>
-              </ul>
-              <a class="cta" href="#contatti">Inizia Ora</a>
-            </article>
-            <article class="pricing pricing-featured" aria-label="Piano consigliato">
-              <h3>Professionale</h3>
-              <p class="price"><span>€599</span> / mese</p>
-              <ul>
-                <li>Fino a 100 spedizioni / giorno</li>
-                <li>Tutte le funzionalità Starter</li>
-                <li>Integrazioni multiple + AIDA</li>
-                <li>10 utenti + portale committenti</li>
-                <li>Supporto prioritario 12x6</li>
-                <li>API &amp; webhook completi</li>
-              </ul>
-              <a class="cta" href="#contatti">Scegli Professionale</a>
-            </article>
-            <article class="pricing">
-              <h3>Enterprise</h3>
-              <p class="price"><span>Preventivo</span></p>
-              <ul>
-                <li>Volumi illimitati</li>
-                <li>SLA 99,9% con penali</li>
-                <li>Regione cloud Aruba Italia</li>
-                <li>Single Sign-On SAML / OIDC</li>
-                <li>Customer Success dedicato</li>
-                <li>Formazione on-site a Verona</li>
-              </ul>
-              <a class="cta" href="#contatti">Parla con le Vendite</a>
-            </article>
-          </div>
         </div>
       </section>
 
-      <!-- 8. Testimonianze -->
-      <section class="band" aria-labelledby="test-heading">
+      <!-- 6. Cosa NON è -->
+      <section class="band-soft" aria-labelledby="not-heading">
         <div class="container">
-          <p class="eyebrow">Testimonianze</p>
-          <h2 id="test-heading">Quello che dicono di noi gli operatori del corridoio</h2>
-          <div class="grid grid-3 testimonial-grid">
-            <figure class="testimonial">
-              <blockquote>
-                <p>
-                  «Finalmente abbiamo un'unica vista su strada e ferrovia. I committenti tedeschi ci chiamano
-                  meno, perché la spedizione la vedono da soli in tempo reale.»
-                </p>
-              </blockquote>
-              <figcaption>
-                <strong>Luca M.</strong><br />
-                Direttore operativo, spedizioniere intermodale, Verona Sud
-              </figcaption>
-            </figure>
-            <figure class="testimonial">
-              <blockquote>
-                <p>
-                  «Abbiamo sostituito quattro fogli Excel e due chat WhatsApp con una dashboard sola. La
-                  segreteria logistica ha recuperato almeno venti ore a settimana.»
-                </p>
-              </blockquote>
-              <figcaption>
-                <strong>Giorgia T.</strong><br />
-                Responsabile supply-chain, azienda alimentare, Villafranca di Verona
-              </figcaption>
-            </figure>
-            <figure class="testimonial">
-              <blockquote>
-                <p>
-                  «Il modulo AIDA da solo ripaga l'abbonamento. Prima perdevamo mezza giornata a ogni T1, ora
-                  il documento va in dogana e torna la risposta senza intervento manuale.»
-                </p>
-              </blockquote>
-              <figcaption>
-                <strong>Andrea F.</strong><br />
-                Titolare, padroncino con 8 mezzi, Mozzecane (VR)
-              </figcaption>
-            </figure>
-          </div>
+          <p class="eyebrow">Onestà</p>
+          <h2 id="not-heading">Cosa LogiTrack NON è</h2>
+          <ul class="steps" style="list-style:none">
+            <li><strong>Non è un SaaS multi-tenant.</strong> Niente cloud condiviso. Ogni cliente ha la sua fork.</li>
+            <li><strong>Non sostituisce il gestionale fiscale.</strong> Si integra con quello che hai (export CSV, eventualmente API REST).</li>
+            <li><strong>Non è un TMS enterprise.</strong> Niente moduli che non hai chiesto. Niente bloat da listino.</li>
+            <li><strong>Non sostituisce il consulente DGSA né il consulente Albo.</strong> Il software prepara, valida, firma e trasmette i documenti; la responsabilità regolatoria resta in capo all'impresa.</li>
+            <li><strong>Non emette fatture.</strong> La fatturazione resta sul tuo gestionale fiscale.</li>
+          </ul>
         </div>
       </section>
 
-      <!-- 9. CTA -->
+      <!-- 7. CTA -->
       <section class="cta-band" id="contatti" aria-labelledby="cta-heading">
         <div class="container cta-content">
-          <h2 id="cta-heading">Inizia Oggi a Vedere Davvero le Tue Spedizioni</h2>
+          <h2 id="cta-heading">Vediamoci a Mozzecane</h2>
           <p>
-            Una demo di 30 minuti a Mozzecane o in videochiamata. Portiamo noi un caso d'uso reale basato sul
-            tuo corridoio più critico.
+            Una discovery di un'ora, gratis, in caffè a Mozzecane o in videochiamata. Porto io un caso d'uso
+            reale del tuo settore. Se non ti convinco, niente preventivo: avrai comunque una mappa onesta
+            del problema.
           </p>
-          <form class="cta-form" aria-label="Modulo contatto demo">
-            <label>
-              <span>Nome e Cognome</span>
-              <input type="text" name="nome" required autocomplete="name" />
-            </label>
-            <label>
-              <span>Email aziendale</span>
-              <input type="email" name="email" required autocomplete="email" />
-            </label>
-            <label>
-              <span>Azienda</span>
-              <input type="text" name="azienda" required autocomplete="organization" />
-            </label>
-            <label>
-              <span>Volumi stimati (spedizioni / mese)</span>
-              <input type="text" name="volumi" inputmode="numeric" />
-            </label>
-            <button type="submit" class="cta cta-light">Richiedi la Demo</button>
-          </form>
+          <p style="margin-top:1.5rem">
+            <strong>Renan Augusto Macena</strong><br />
+            Mozzecane (VR), Italia<br />
+            <a href="mailto:renanaugustomacena@gmail.com">renanaugustomacena@gmail.com</a>
+          </p>
         </div>
       </section>
     </main>
 
-    <!-- 10. Footer -->
+    <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
       <div class="container footer-grid">
         <div>
           <p class="brand-footer"><span class="brand-mark" aria-hidden="true">LT</span> LogiTrack</p>
-          <p>Via dell'Industria 1 · 37060 Mozzecane (VR)</p>
-          <p>P.IVA 00000000000 · REA VR-000000</p>
+          <p>Renan Augusto Macena — Mozzecane (VR), Italia</p>
         </div>
         <div>
-          <h3>Prodotto</h3>
+          <h3>Kit</h3>
           <ul>
             <li><a href="#funzionalita">Funzionalità</a></li>
-            <li><a href="#prezzi">Prezzi</a></li>
-            <li><a href="#come-funziona">Come Funziona</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3>Legale</h3>
-          <ul>
-            <li><a href="#">Privacy (GDPR)</a></li>
-            <li><a href="#">Termini di servizio</a></li>
-            <li><a href="#">Cookie</a></li>
+            <li><a href="#modello">Come lavoro</a></li>
           </ul>
         </div>
         <div>
           <h3>Contatti</h3>
           <ul>
-            <li><a href="mailto:info@logitrack.it">info@logitrack.it</a></li>
-            <li><a href="tel:+390000000000">+39 000 000 0000</a></li>
-            <li>PEC: logitrack@pec.it</li>
+            <li><a href="mailto:renanaugustomacena@gmail.com">renanaugustomacena@gmail.com</a></li>
           </ul>
         </div>
       </div>
-      <p class="made-in">Made in Verona · Corridoio del Brennero</p>
+      <p class="made-in">Mozzecane · Verona · Veneto</p>
     </footer>
   </body>
 </html>

@@ -1,8 +1,11 @@
 # LogiTrack Rifiuti — Pitch One-Pager
 
-> Vertical pitch for trasportatori e intermediari di rifiuti speciali
-> nel corridoio Verona Sud / Mantova / Brescia. Companion to the
-> logistics one-pager (`PITCH.md`), which targets a different ICP.
+> Door-to-door / cold-call pitch per trasportatori e intermediari di
+> rifiuti speciali nel corridoio Verona Sud / Mantova / Brescia.
+> Companion to the logistics one-pager
+> ([`PITCH.md`](PITCH.md)), which targets a different ICP.
+> Modello di ingaggio: kit + fork-per-cliente, NON SaaS.
+> Vedi [`FREELANCER-COMMERCIAL-MODEL.md`](FREELANCER-COMMERCIAL-MODEL.md).
 
 ## Il problema
 
@@ -36,8 +39,10 @@ risolvono parte del problema ma:
 ## La soluzione
 
 LogiTrack Rifiuti è il modulo verticale del kit LogiTrack costruito
-sopra la stessa piattaforma multi-tenant Go + MongoDB + Redis che
-serve già il modulo logistico. Aggiunge:
+sopra la stessa piattaforma Go + MongoDB + Redis che serve già il
+modulo logistico. Il kit è freelancer-grade: una fork del repository
+viene personalizzata e deployata sul tuo VPS (intestato al cliente),
+non su un cloud condiviso. Aggiunge:
 
 1. **Modello di dominio completo** Produttore / Trasportatore /
    Destinatario / FIR / Registro cronologico / Albo, con codici
@@ -93,6 +98,9 @@ trasportatori entro 25 km dal centro.
 
 ## Implementation timeline
 
+Engagement standard: **6–8 settimane** dalla firma del preventivo
+alla consegna delle chiavi del fork operativo.
+
 - **Settimana 1** — onboarding anagrafiche Produttori /
   Trasportatori / Destinatari, sincronizzazione delle iscrizioni
   Albo del cliente (catalogo curato; verifica giornaliera in
@@ -100,14 +108,17 @@ trasportatori entro 25 km dal centro.
 - **Settimana 2** — ingestione FIR esistenti via import CSV /
   scansione retroattiva, taratura della macchina a stati con i
   flussi reali del cliente, attivazione watchdog 90 giorni.
-- **Settimana 3** — collegamento di una telematica veicolare
-  (Viasat) e attivazione del cruscotto dispatcher.
+- **Settimana 3** — collegamento opzionale di una telematica
+  veicolare (Viasat o equivalente) e attivazione del cruscotto
+  dispatcher.
 - **Settimana 4** — trasmissione di un FIR pilota end-to-end via
   `QueuedStub`; preparazione delegazione SPID/CIE/CNS per il
   certificato RENTRI di produzione.
 - **Settimana 6** — cutover sull'adapter HTTP live RENTRI appena
   il certificato è disponibile; conservazione a norma AgID via
   conservatore accreditato selezionato in onboarding.
+- **Settimana 7-8** — handover, formazione operatori, transizione
+  al retainer mensile.
 
 ## Cosa NON facciamo
 

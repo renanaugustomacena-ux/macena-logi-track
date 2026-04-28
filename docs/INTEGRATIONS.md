@@ -1,73 +1,124 @@
 # LogiTrack — Integrations
 
-## 1. AIDA (Agenzia delle Dogane)
+Honesty: the kit ships only the integrations actually wired in the
+codebase today. The "Italian regulatory" integrations (AIDA, FERTRAM,
+Telepass, Albo Autotrasportatori) are real things real customers ask
+for, but they are deliberately NOT in the kit core: they are
+per-customer adapters added during the engagement when the customer
+has the credentials, the contract, and the budget for them.
 
-- Adapter stub: `internal/services/aida_client.go` (planned; the
-  envelope shape is documented but the accredited client is customer-
-  specific).
-- Authentication: PKCS#12 certificate.
-- Request shape:
-  ```
-  POST {AIDA_API_BASE}/transito/dichiarazione
-  Content-Type: application/xml
-  X-API-Key: {AIDA_API_KEY}
-  <MRNRequest ...>
-  ```
-- Status callback (polled or via webhook): updates
-  `Shipment.CustomsStatus.ClearedAt`, fires
-  `EventCustomsHold` / `EventCustomsCleared`.
+If you are forking the kit, expect to write the adapter for the
+provider your customer actually uses, not to plug in a pre-built
+generic one.
 
-## 2. Viasat / Octo / Geotab telematics providers
+## 1. Telematics ingestion (built-in)
 
-- Inbound webhook: `POST /api/v1/shipments/{id}/waypoints`.
-- Payload: `{ recordedAt, position{ type, coordinates }, speedKph,
-  headingDeg, source }`.
-- Authentication: tenant-scoped JWT issued by LogiTrack admin API.
+Single generic ingest endpoint, provider-agnostic:
+
+```
+POST /api/v1/shipments/{id}/waypoints
+Authorization: Bearer <jwt>
+Content-Type: application/json
+
+{
+  "recordedAt": "2026-04-17T07:12:00Z",
+  "position": { "type": "Point", "coordinates": [11.01, 45.93] },
+  "speedKph": 82.4,
+  "headingDeg": 40.2,
+  "source": "viasat",
+  "rawEventId": "v-98f1…"
+}
+```
+
+- Authentication: per-tenant JWT (HS256, issued by the kit's `/auth/login`
+  or by the customer's IDP at the IdentityStore seam).
 - Idempotency: providers optionally set `rawEventId`; duplicates
-  deduplicated on `(shipmentId, recordedAt, rawEventId)`.
+  deduplicated downstream by the customer adapter when needed.
+- Side effects: appends waypoint, updates `current_position`, caches
+  in Redis, inserts a `position_update` tracking event, publishes on
+  the Redis tracking channel for WebSocket fan-out.
 
-## 3. Telepass
+Provider-specific adapters (Viasat, Octo, Geotab, etc.) translate the
+provider's webhook into this shape. Each adapter is small (a few
+hundred lines of Go) and lives outside the kit core, in a per-customer
+overlay package.
 
-- Read-only: monthly CSV of toll events; adapter pulls into the
-  `telepass_codes` metadata of each shipment. Production integration
-  is out-of-scope for Mission II; envelope documented in
-  `docs/ITALIAN-COMPLIANCE.md`.
+## 2. RENTRI (built-in: stub default, live adapter pending)
 
-## 4. RFI / Mercitalia intermodal slots
+The rifiuti module ships a `rentri.Client` interface and a
+`rentri.QueuedStub` default adapter. The stub:
 
-- Roadmap Phase 3. Envelope:
-  `POST {RFI_BASE}/slot/book { slotId, shipmentId, weightKg }`.
-- Used for Quadrante Europa arrivals with rail leg.
+- Accepts `VidimazioneRequest` calls, returns a deterministic
+  `NumeroRENTRI` keyed on the idempotency key.
+- Persists submissions in an in-memory FIFO queue, race-tested under
+  16-worker contention.
+- Is the right answer for development, customer demos, and the
+  engagement period before the customer's RENTRI certificato digitale
+  arrives.
 
-## 5. FatturaFlow (cross-project)
+The live HTTP adapter (sandbox `https://demoapi.rentri.gov.it`,
+production `https://api.rentri.gov.it`) materialises in
+[`backend/internal/modules/rifiuti/rentri/`](../backend/internal/modules/rifiuti/rentri/)
+when the customer provides the SPID/CIE/CNS-bound Entratel delegation
+that unlocks the API certificate. Cutover is a one-file change at the
+composition root in `cmd/server/main.go`:
 
-- LogiTrack exposes `GET /api/v1/shipments/{id}/invoice-snapshot`
-  returning a JSON summary for use inside a FatturaPA line-extension
-  as per §13.2.5 of the master plan. FatturaFlow consumes via:
-  ```
-  POST /api/v1/invoices/line-extension
-  { shipmentRef: "CMR-VRMU-003", mrn: "25ITQX1A00000000A1", totalKg: 18500 }
-  ```
+```go
+deps.Rifiuto = handlers.NewRifiutoHandler(mongoRepo, rentri.NewQueuedStub())
+//                                                  ^ swap with live HTTP adapter
+```
 
-## 6. SmartERP (cross-project)
+Sandbox base URL + production base URL are constants in
+`rentri/endpoints.go`. xFIR payload encoding is currently a
+`encoding/xml`-escaped placeholder; the full RENTRI v1.0 XSD encoder
+lands together with the live adapter.
 
-- LogiTrack does not produce orders; SmartERP is the source of
-  production-order data. Per §13.2.2 of the master plan the
-  LogiTrack admin UI consumes
-  `GET {SMARTERP_BASE}/api/v1/production-orders` to link a
-  shipment to the originating order. The envelope is pinned in
-  `docs/SHARED-SCHEMAS.md` of the portfolio.
-- Direction is **read from SmartERP**: no LogiTrack write-back to
-  production-order state is planned.
+## 3. OSRM route optimisation (opt-in)
 
-## 7. Grafana / Prometheus
+Set `OSRM_BASE_URL` and `OSRM_ALLOWED_HOSTS` to point at a
+self-hosted OSRM instance with a custom truck profile (`OSRM_TRUCK_PROFILE`).
+When unconfigured (kit default) the optimiser silently falls back to
+a great-circle + 70 km/h estimate after a one-shot WARN.
 
-- `/metrics` exposed publicly (service-mesh restricted in production).
-- Grafana dashboard JSON committed in `docs/grafana/logitrack.json`
-  (roadmap: to be generated by Mission II follow-up).
+SSRF guard: the BaseURL host is checked against the allow-list before
+any DNS or socket. The HTTP client refuses to follow redirects, so a
+compromised or MITM'd OSRM cannot escape the allow-list.
 
-## 8. OSRM
+Never point at the public `https://router.project-osrm.org` in
+production: US-hosted, no SLA, no truck profile, EU customer route
+data leaving the EU (GDPR Art. 44).
 
-- Base URL: `OSRM_BASE_URL` (public demo or self-hosted).
-- Allow-list: `OSRM_ALLOWED_HOSTS` (hard SSRF guard).
-- Fallback: straight-line + 70 km/h when OSRM unreachable.
+## 4. Frontend (built-in)
+
+The Vue 3 SPA in `frontend/` consumes only the kit's own REST + WebSocket
+surface. There is no third-party widget, embed or analytics tag in the
+default kit. Customers who want analytics (Plausible, Matomo) add it
+during the engagement.
+
+## 5. Prometheus / Grafana (opt-in)
+
+`/metrics` exposes Prometheus exposition v0.0.4 unconditionally. In a
+service-mesh deployment a sidecar fronts the endpoint and restricts
+access to the monitoring namespace. In a non-mesh deployment you must
+restrict the endpoint at the reverse proxy layer (e.g. `deny` outside
+the customer's Prometheus scrape source IP).
+
+A starter Grafana dashboard JSON is not currently in the repo; one
+will be added when the first customer asks for it.
+
+## 6. What is NOT in the kit and why
+
+| Provider | Why not in the kit |
+| --- | --- |
+| AIDA (Agenzia delle Dogane) | Per-customer accreditation (PKCS#12). Customer-specific. Adapter built during engagement. |
+| FERTRAM / RFI | mTLS certificate per operator. Customer-specific. Adapter built during engagement. |
+| Telepass / ViaCard | Read-only monthly CSV; customer's own contract; trivial CSV importer per fork. |
+| Albo Autotrasportatori | Public registry, no machine-readable API as of 2026-04-28. Manual verification per fork. |
+| FatturaPA / SDI | Out of scope for LogiTrack. Customer keeps their existing fiscal gestionale; LogiTrack writes shipment metadata to a CSV export it consumes. |
+| Conservazione AgID | Customer chooses an accreditato (https://www.agid.gov.it/it/piattaforme/conservazione). Per-deployment, not per-kit. |
+
+A previous version of this kit shipped half-finished AIDA / FERTRAM /
+Telepass / Albo client packages with `_ = deps.AidaClient`-style dead
+references. They have been removed from the codebase as part of the
+2026-04-28 honesty pass: the kit no longer claims to integrate
+something it does not actually integrate.

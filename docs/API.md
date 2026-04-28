@@ -1,12 +1,14 @@
 # LogiTrack — API Reference
 
-Base URL: `https://api.logitrack.it/api/v1`
+Base URL: per-deployment (e.g. `https://api.<customer>.example/api/v1`)
 Development: `http://localhost:8080/api/v1`
 
-All endpoints (except `/api/health`) require a Bearer JWT issued by the
-LogiTrack identity service. Tokens are HS256-signed, carry the tenant
-identifier under `tenantId`, and expire after the `JWT_ACCESS_TTL`
-configured at the auth service (default 15 minutes).
+All endpoints (except `/api/health`, `/api/ready`, `/metrics`,
+`/api/v1/auth/login`) require a Bearer JWT issued by the LogiTrack
+auth endpoint or by the customer's IDP. Tokens are HS256-signed,
+carry the tenant identifier under `tenantId`, and expire after the
+`JWT_ACCESS_TTL` configured (default 15 minutes). The kit issues
+**access tokens only** — there is no refresh endpoint.
 
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...
@@ -24,12 +26,16 @@ Error envelopes are uniform:
 
 ## Table of contents
 
-1. [Health](#1-health)
-2. [Shipments](#2-shipments)
-3. [Tracking](#3-tracking)
-4. [Routes](#4-routes)
-5. [WebSocket stream](#5-websocket-stream)
-6. [Error codes](#6-error-codes)
+1. [Health + Ready + Metrics](#1-health)
+2. [Auth](#2-auth)
+3. [Shipments](#3-shipments)
+4. [Tracking](#4-tracking)
+5. [Routes](#5-routes)
+6. [WebSocket stream](#6-websocket-stream)
+7. [Fleet (vehicles, drivers, geofences)](#7-fleet)
+8. [Rifiuti (anagrafiche + FIR + RENTRI)](#8-rifiuti)
+9. [Observability](#9-observability)
+10. [Error codes](#10-error-codes)
 
 ---
 
@@ -55,9 +61,50 @@ liveness probes and by the landing page.
 
 `status` is `ok` if every dependency reports `ok`, `degraded` otherwise.
 
+### `GET /api/ready`
+
+Public. Readiness probe (seed-aware). Returns 200 with
+`{"status":"ready"}` once dependencies are connected and demo seed
+(if enabled) has finished. Used by orchestrator readiness probes.
+
 ---
 
-## 2. Shipments
+## 2. Auth
+
+### `POST /api/v1/auth/login`
+
+Public. Issue an access token.
+
+**Request**
+```json
+{ "username": "operator@customer.example", "password": "<password>" }
+```
+
+**Response 200**
+```json
+{
+  "tokenType": "Bearer",
+  "accessToken": "eyJhbGciOiJIUzI1NiIs…",
+  "expiresIn": 900,
+  "issuedAt": 1745835600
+}
+```
+
+NIST SP 800-63B-style lockout: 5 failed attempts → 15-minute window
+where the username returns `invalid_credentials` regardless of the
+password supplied. Successful login resets the counter.
+
+The kit issues **access tokens only**. There is no `/refresh`
+endpoint. On expiry the client re-authenticates. Customers needing
+sliding sessions integrate their corporate IDP at the IdentityStore
+seam (`backend/internal/handlers/auth.go`).
+
+When `LOGITRACK_IDENTITY_BACKEND=disabled` (or the seed user/password
+are empty), this endpoint returns 503 `identity_backend_disabled`.
+
+---
+
+## 3. Shipments
 
 ### `POST /api/v1/shipments`
 
@@ -209,7 +256,7 @@ the interval > 0. See `internal/services/eta_service.go`.
 
 ---
 
-## 3. Tracking
+## 4. Tracking
 
 `TrackingEvent` is emitted on every significant state transition. The
 full taxonomy is documented inline in the Go type
@@ -228,7 +275,7 @@ full taxonomy is documented inline in the Go type
 
 ---
 
-## 4. Routes
+## 5. Routes
 
 ### `POST /api/v1/routes/optimize`
 
@@ -277,7 +324,7 @@ request or returns a non-OK code.
 
 ---
 
-## 5. WebSocket stream
+## 6. WebSocket stream
 
 ### `GET /api/v1/stream/tracking` (upgrade)
 
@@ -342,7 +389,72 @@ Runtime controls:
 - `logitrack_ws_connections_active` — gauge of active subscribers.
 - `logitrack_ws_broadcasts_total` — counter of messages fanned out.
 
-## 6. Observability
+## 7. Fleet
+
+Master-data endpoints for vehicles, drivers and geofences. All
+authenticated, all tenant-scoped.
+
+### Vehicles
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/api/v1/vehicles` | Create. Body: `Vehicle` (plate, EURO class, ADR/ATP markers, telematics provider). |
+| GET | `/api/v1/vehicles` | List for tenant. Query: `limit`, `offset`. |
+| GET | `/api/v1/vehicles/{id}` | Retrieve. |
+
+### Drivers
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/api/v1/drivers` | Create. Body: `Driver` (name, patente, CQC, Albo flag). |
+| GET | `/api/v1/drivers` | List for tenant. |
+| GET | `/api/v1/drivers/{id}` | Retrieve. |
+
+### Geofences
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/api/v1/geofences` | Create. Body: `Geofence` with GeoJSON `polygon` and `type` (warehouse, customs, port, depot, terminal, rest_area, loading_bay). |
+| GET | `/api/v1/geofences` | List for tenant. |
+| GET | `/api/v1/geofences/{id}` | Retrieve. |
+
+---
+
+## 8. Rifiuti
+
+Module 2: trasporto rifiuti speciali (RENTRI-ready). Regulatory
+anchors in [`MODULE-RIFIUTI.md`](MODULE-RIFIUTI.md).
+
+### Anagrafiche
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/api/v1/rifiuti/produttori` | Create produttore. `ragione_sociale` and `codice_fiscale` required. |
+| GET | `/api/v1/rifiuti/produttori` | List for tenant. |
+| POST | `/api/v1/rifiuti/trasportatori` | Create trasportatore. Validates `albo_categoria` (1, 2-bis, 4, 5, 6, 8, 9, 10). |
+| GET | `/api/v1/rifiuti/trasportatori` | List for tenant. |
+| POST | `/api/v1/rifiuti/destinatari` | Create destinatario (impianto). |
+| GET | `/api/v1/rifiuti/destinatari` | List for tenant. |
+
+### FIR
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| POST | `/api/v1/rifiuti/fir` | Create. Validates FIR shape, runs `Trasportatore.CanCarry(cer, now)` and `Destinatario.CanReceive(cer, op, now)` cross-checks. Persists in `FIRDraft` state. |
+| GET | `/api/v1/rifiuti/fir` | List for tenant. Query: `state` to filter by FIR state. |
+| GET | `/api/v1/rifiuti/fir/{id}` | Retrieve. |
+| POST | `/api/v1/rifiuti/fir/{id}/transition` | Body `{"to":"<FIRState>"}`. Guards every legal edge in `firTransitions`; stamps signature timestamps for the relevant role. |
+| POST | `/api/v1/rifiuti/fir/{id}/vidima` | Submit FIR to RENTRI. Idempotency key derived from `(tenantID, firID)`. State must be `FIRDraft` on entry; advances to `FIRVidimato` on success. Returns `numero_rentri`, `vidimato_at`, `qr_code_payload`. |
+
+### CER inline validator
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/api/v1/rifiuti/cer/{code}` | Returns `{ valid, normalised, pericoloso, chapter }` or `{ valid:false, error }`. Useful for the operator UI to validate as the user types. |
+
+---
+
+## 9. Observability
 
 ### `GET /metrics`
 
@@ -360,7 +472,7 @@ Minimum exposed series:
 
 ---
 
-## 7. Error codes
+## 10. Error codes
 
 | Code | Meaning |
 | --- | --- |
@@ -369,11 +481,24 @@ Minimum exposed series:
 | `invalid_token` | JWT signature / issuer / expiry invalid |
 | `invalid_claims` | Token parsed but required claim missing |
 | `insufficient_role` | Authenticated but lacking required role |
+| `invalid_credentials` | Login: wrong username/password or locked out |
+| `identity_backend_disabled` | Login: backend disabled (set `LOGITRACK_IDENTITY_BACKEND=memory` + seed user/password) |
 | `invalid_body` | JSON decoding failed |
-| `cannot_create` | Domain validation rejected the shipment |
+| `missing_fields` | Required field absent in body |
+| `invalid_albo_categoria` | Rifiuti: trasportatore Albo categoria not in {1, 2-bis, 4, 5, 6, 8, 9, 10} |
+| `fir_invalid` | Rifiuti: FIR validation failed |
+| `fir_not_draft` | Rifiuti: vidimazione attempted on a FIR not in `FIRDraft` state |
+| `invalid_transition` | Rifiuti: FIR state transition rejected by state machine |
+| `trasportatore_not_found` / `destinatario_not_found` / `produttore_not_found` | Rifiuti: referenced anagrafica missing |
+| `trasportatore_cannot_carry` | Rifiuti: Albo categoria/expiry rejects this CER |
+| `destinatario_cannot_receive` | Rifiuti: impianto authorisation rejects this CER + operazione |
+| `rentri_failed` | Rifiuti: RENTRI client returned an error |
+| `xfir_marshal_failed` | Rifiuti: XML encoding of placeholder xFIR failed |
+| `cannot_create` | Domain validation rejected (shipment / fleet) |
 | `cannot_record` | Waypoint rejected (bad geo-point, unknown shipment) |
-| `not_found` | Shipment / position not found in tenant |
-| `list_failed`, `lookup_failed`, `trace_failed` | Internal DB error |
+| `not_found` | Resource not found in tenant |
+| `list_failed`, `lookup_failed`, `trace_failed`, `update_failed`, `create_failed` | Internal DB error |
 | `optimise_failed` | OSRM upstream error |
-| `rate_limited` | Request rate exceeded per-IP bucket |
+| `rate_limited` | Per-IP bucket exceeded |
+| `handshake_rate_limited` | WS handshake bucket exceeded |
 | `unauthorized` (WS) | Token rejected during upgrade |

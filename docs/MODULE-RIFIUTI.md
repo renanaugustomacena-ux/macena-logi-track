@@ -163,19 +163,42 @@ machine covered including terminal-state rejections,
 
 ## 8. What the module deliberately does NOT ship yet
 
-- HTTP handlers (deferred until the producer / trasportatore /
-  destinatario CRUD shape is informed by the FRO discovery call).
-- Repository accessors (will mirror the logistics module pattern;
-  the migration file is one commit away).
-- Live RENTRI HTTP adapter (waiting for the design-partner
-  certificate; the `Client` interface is the contract that
-  adapter must implement).
-- ConservazioneAgID conservatore selection (will be a deployment
-  decision, list at https://www.agid.gov.it/it/piattaforme/conservazione).
-- Sanction-policy advisor service (will be added as part of the
-  operator dashboard, not as core domain).
+- **Live RENTRI HTTP adapter**. The `Client` interface +
+  `QueuedStub` are wired and exercised under race; the live HTTP
+  adapter materialises the day a design-partner customer provides
+  the SPID/CIE/CNS-bound Entratel delegation that unlocks the API
+  certificate. Switching to live is a one-file change in
+  `cmd/server/main.go`.
+- **Conservazione AgID**. The list of accreditati is at
+  https://www.agid.gov.it/it/piattaforme/conservazione; selecting
+  the conservatore is a per-fork deployment decision, not a kit
+  feature.
+- **Sanction-policy advisor**. A reasonable v2 follow-on for the
+  operator dashboard; not part of the kit core because the
+  responsibility legally sits on the impresa, not on the software.
+- **xFIR XSD encoder**. The current `VidimaFIR` handler emits a
+  placeholder `<formulario><cer>…</cer></formulario>` payload built
+  via `encoding/xml` (so user-controlled fields are escaped). The
+  full RENTRI v1.0 XSD-driven encoder lands together with the live
+  HTTP adapter.
+- **MUD annual export**. Will be added as a per-customer feature
+  during the engagement: the MUD form is stable but the customer's
+  CER/operazione mapping is not.
 
-The kit doctrine keeps these as separate-commit items because
-shipping them ahead of customer feedback would re-introduce the
-"build something nobody asked for" failure pattern this whole
-pivot was designed to break.
+These are deliberately deferred: shipping them ahead of customer
+feedback would re-introduce the "build something nobody asked for"
+failure pattern the kit doctrine was designed to break.
+
+## 9. What the module DOES ship today (HTTP + frontend)
+
+- REST endpoints under `/api/v1/rifiuti/*`:
+  - Anagrafiche: `POST/GET produttori|trasportatori|destinatari`.
+  - FIR: `POST /fir`, `GET /fir`, `GET /fir/:id`,
+    `POST /fir/:id/transition`, `POST /fir/:id/vidima`.
+  - Inline validator: `GET /cer/:code`.
+- All endpoints are JWT-authenticated and tenant-scoped.
+- Vue 3 view at `/rifiuti` with party drop-downs, inline CER
+  validator, ADR-conditional fields, FIR list with state badges.
+- Repository accessors mirror the logistics pattern (Insert/Get/List/Update),
+  unique index on `(tenant_id, codice_fiscale)` for anagrafiche and
+  on `(tenant_id, numero_rentri)` sparse for FIR.

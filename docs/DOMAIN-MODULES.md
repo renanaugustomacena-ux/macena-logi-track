@@ -6,18 +6,24 @@
 
 ## Why modules
 
-LogiTrack is a kit, not a product. The platform layers (auth,
+LogiTrack is a kit, not a SaaS product. The platform layers (auth,
 audit, chain-of-custody, observability, repositories, middleware,
 HTTP handlers for cross-vertical concerns) are reused unchanged
 across every customer engagement. The vertical-specific layer —
 entities, state machines, validators, integrations with regulators
 that only matter for one vertical — lives in a domain module.
 
-Each customer engagement = platform + 1 module + per-customer
-customization. The module is the unit of vertical specialization.
-This is what lets a single freelancer ship a customer-fit operations
-platform in 6-10 weeks instead of 6 months: 70% of the codebase is
+Each customer engagement = **platform + 1 module + per-customer
+overlay**. The module is the unit of vertical specialization. This
+is what lets a single freelancer ship a customer-fit operations
+platform in 4-8 weeks instead of 6 months: ~70% of the codebase is
 already production-grade.
+
+Customer-specific code that does not belong in the kit core (custom
+adapter for the customer's specific telematics provider, custom
+report layouts, customer-branded UI tweaks) lives in a per-customer
+**overlay** package the kit core never imports. See
+[`KIT-PLAYBOOK.md`](KIT-PLAYBOOK.md) for the kit-vs-overlay rule.
 
 ## Module contract
 

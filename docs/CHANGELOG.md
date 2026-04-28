@@ -3,6 +3,69 @@
 LogiTrack follows semantic versioning (`MAJOR.MINOR.PATCH`). Each
 release pairs a git tag with a line in this file.
 
+## 0.3.0 — 2026-04-28 — Kit honesty pass
+
+The kit is reframed: no longer a SaaS product roadmap, now an
+honestly-positioned freelancer-grade kit (fork-per-customer model,
+contratto d'opera ex art. 2222 c.c., no canone mensile per posto).
+
+### Removed (because the code did not back the claim)
+
+- `internal/integrations/aida` — never wired beyond `_ = deps.AidaClient`.
+- `internal/integrations/albo` — same.
+- `internal/integrations/rfi` — same.
+- `internal/integrations/telepass` — same.
+- `POST /api/v1/auth/refresh` — refresh tokens were issued but the SPA
+  never stored them. Now access tokens only; sliding sessions belong
+  to the customer's IDP via the IdentityStore seam.
+- `Redis.StoreRefreshToken` / `RevokeRefreshToken` — orphaned with refresh.
+- `KafkaConfig`, `SessionConfig`, `AIDAConfig`, `RFIConfig`,
+  `TelepassConfig`, `AlboConfig` — placeholders never read.
+- `breachCheckStub` silent no-op — replaced with explicit
+  `LOGITRACK_IDENTITY_DEMO_BREACH_ACK=true` opt-in for production +
+  memory backend.
+- Docs: `MODUS_OPERANDI.md`, `PRICING.md`, `PRICING-RIFIUTI.md`,
+  `OPERATIONS-CADENCE.md`, `SLO.md`, `DATA-RESIDENCY.md`,
+  `MIGRATION-FROM-LEGACY.md`, `DEMO-SCRIPT.md`, `RISK-ACCEPTANCES.md`,
+  `SECURITY-SELF-ASSESSMENT.md` (merged into `SECURITY.md`).
+
+### Security (CTF-style audit fixes)
+
+- C-1 `middleware/rate_limit.go`: added eviction to the per-IP bucket
+  map (30-min idle → swept every 5 min). Closes the IP-rotation
+  memory-exhaustion DoS vector.
+- C-2 `services/route_optimizer.go`: the OSRM HTTP client now refuses
+  redirects (`http.ErrUseLastResponse`). Closes the SSRF bypass via a
+  compromised OSRM serving 30x to internal hosts.
+- C-3 `handlers/rifiuti.go`: xFIR placeholder switched from string
+  concatenation to `encoding/xml` so user-controlled CER values are
+  escaped.
+- H-1 OSRM default → empty. Public US-hosted demo no longer the
+  default; customer routes stay in the EU unless deliberately wired
+  to a self-hosted OSRM.
+- H-4 `config.guardProductionSecrets` extended: rejects
+  unauthenticated `MONGO_URI` / `REDIS_URL` and weak/empty demo
+  identity password in production.
+- M-2 `services/shipment_service.go`: genesis custody hash failure
+  now surfaces to caller instead of being silently swallowed.
+- L-1 `middleware/security_headers.go`: HSTS now includes `preload`.
+
+### Added
+
+- New playbook docs: `KIT-PLAYBOOK.md`, `CLIENT-FORK-RECIPE.md`,
+  `MOZZECANE-PITCH.md`, `FREELANCER-COMMERCIAL-MODEL.md`.
+
+### Changed
+
+- `README.md`, `ARCHITECTURE.md`, `INTEGRATIONS.md`, `COMPLIANCE.md`,
+  `RUNBOOK.md`, `TECHNICAL-DEBT.md`, `MODULE-RIFIUTI.md`,
+  `landing-page/index.html`, `PITCH.md`, `PITCH-RIFIUTI.md`: SaaS
+  framing stripped, kit framing applied, dead integration references
+  removed.
+- `API.md`: added the 19 routes that existed in code but were not
+  documented (auth login, fleet vehicles/drivers/geofences, rifiuti
+  anagrafiche/FIR/CER/vidima/transition).
+
 ## 0.2.0 — 2026-04-17 — Consolidation, Mission II
 
 ### Added

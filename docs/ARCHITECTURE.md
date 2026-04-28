@@ -1,293 +1,318 @@
 # LogiTrack — Architettura
 
-Documento di riferimento per l'architettura logica, fisica e di integrazione della piattaforma LogiTrack.
+Documento di riferimento per l'architettura logica e fisica del kit
+LogiTrack. Il kit è progettato per essere fork-ato per ogni cliente:
+ciò che segue descrive la baseline upstream del kit, non un singolo
+deployment cliente.
 
 ## 1. Vista d'insieme
 
-LogiTrack è un sistema di visibilità supply-chain che combina ingestione
-telematica ad alta frequenza, archiviazione documentale flessibile,
-pub/sub in memoria per la fan-out WebSocket e integrazioni verticali
-con Agenzia delle Dogane (AIDA), Rete Ferroviaria Italiana (RFI),
-Telepass e i principali provider telematici (Viasat, Octo, Geotab).
+LogiTrack combina ingestione telematica via webhook, archiviazione
+documentale flessibile, pub/sub Redis per la fan-out WebSocket e una
+piattaforma multi-modulo per i verticali. I verticali shipping oggi:
+`logistics` (visibilità supply-chain) e `rifiuti` (RENTRI-ready
+trasporto rifiuti speciali).
 
 ```
-   GPS / Telematics  ────────────┐
-   Carrier webhooks ─────────────┼──> Ingest Gateway (Go)
-   EDI partners    ──────────────┘         │
-                                           │
-                            ┌──────────────▼───────────────┐
-                            │   Shipment Service (Go/Gin)  │
-                            └──┬───────────┬────────────┬──┘
-                               │           │            │
-                         ┌─────▼───┐  ┌────▼───┐  ┌─────▼──────┐
-                         │ MongoDB │  │ Redis  │  │   Kafka    │
-                         │(shpmt,  │  │(cache, │  │(events,    │
-                         │ routes) │  │  pub)  │  │ optional)  │
-                         └─────────┘  └────────┘  └────────────┘
-                               ▲
-                               │ WebSocket / REST
-                       ┌───────┴───────┐
-                       │ Vue 3 SPA     │
-                       │ Map Dashboard │
-                       └───────────────┘
+   GPS / Telematics webhook ─────┐
+   Operator REST/WS calls ───────┼──> Gin handlers (auth, rate-limit)
+                                 │         │
+                          ┌──────▼─────────▼────────────┐
+                          │  Service layer              │
+                          │   - Shipment / Tracking     │
+                          │   - ETA (moving avg)        │
+                          │   - Route optimiser (OSRM)  │
+                          │   - Rifiuti FIR + RENTRI    │
+                          └──┬───────────┬──────────────┘
+                             │           │
+                       ┌─────▼───┐  ┌────▼───────────┐
+                       │ MongoDB │  │ Redis          │
+                       │(shipmts │  │(position cache,│
+                       │ custody,│  │ pub/sub for WS)│
+                       │ FIR,    │  └────────────────┘
+                       │ audit)  │
+                       └─────────┘
+                             ▲
+                             │ REST + WebSocket
+                     ┌───────┴───────┐
+                     │ Vue 3 SPA     │
+                     │ Map dashboard │
+                     │ Rifiuti panel │
+                     └───────────────┘
 ```
 
 ### 1.1 Componenti principali
 
-- **Ingest Gateway** (parte del backend Go). Riceve webhook e chiamate
-  REST, normalizza i payload dei provider telematici, arricchisce con
-  metadati tenant/carrier e li pubblica come eventi `TrackingEvent`.
-- **Shipment Service**. Aggregato di dominio che gestisce il ciclo di
-  vita della spedizione (bozza → prenotata → in transito → consegnata),
-  incluso il registro immutabile di catena di custodia.
-- **Route Optimizer**. Proxy per un'istanza OSRM self-hosted; calcola
-  rotte ottimali, ETA e geometrie poliline.
-- **WebSocket Hub**. Fan-out in-process degli eventi pub/sub Redis
-  verso i client del dashboard.
-- **Frontend SPA**. Vue 3 con Composition API, Pinia, Vue Router 4 e
-  Leaflet. Dashboard con mappa live, timeline eventi, filtri, export.
+- **Handler layer (Gin)**. Riceve webhook telematica, chiamate REST
+  REST autenticate da operatori e SPA, upgrade WebSocket. Tutti gli
+  endpoint mutanti passano dal middleware `JWTAuth` + `Audit` +
+  `RateLimiter`. Il middleware è in `internal/middleware/`.
+- **Service layer**. `ShipmentService`, `TrackingService`,
+  `ETAService`, `OSRMOptimizer`, e gli handler rifiuti orchestrano
+  repository + integrazioni esterne. Definiti in `internal/services/`.
+- **Repository layer**. `MongoRepository` (shipments, custody, fleet,
+  rifiuti) e `RedisRepository` (position cache, pub/sub). Sotto
+  `internal/repository/`. Ogni metodo prende `tenantID` esplicitamente:
+  scoping multi-tenant è una proprietà del repository, non un'opzione
+  del caller.
+- **Module layer**. Le entità di dominio per ciascun verticale vivono
+  in `internal/modules/<vertical>/`: `logistics` ospita
+  `Shipment`, `Vehicle`, `Driver`, `Geofence`, `CustodyRecord`,
+  `TrackingEvent`, validatori targhe + ADR/ATP; `rifiuti` ospita
+  `Produttore`, `Trasportatore`, `Destinatario`, `FIR`,
+  `RegistroEntry`, validatori CER + Albo, e il sub-package
+  `rifiuti/rentri` con il client RENTRI.
+- **Frontend SPA (Vue 3 + Vite + TypeScript)**. Composition API,
+  Pinia per lo state, Vue Router 4, Leaflet per la mappa. Tre viste
+  principali: `HomeView` (dashboard), `ShipmentView` (dettaglio +
+  timeline + mappa), `RifiutiView` (anagrafiche + FIR).
 
 ### 1.2 Principi architetturali applicati
 
-1. **Twelve-Factor**: configurazione via env, processi stateless,
-   logging strutturato su stdout, port binding esplicito, concurrency
-   via processi (goroutine) e scaling orizzontale di default.
-2. **Domain-Driven Design lite**: pacchetti `models`, `services`,
-   `repository`, `handlers` con dipendenze a senso unico
-   (handlers → services → repository → models).
-3. **API-first**: lo schema REST/WebSocket è versionato in `/api/v1/`
-   e documentato in `API.md` prima dell'implementazione.
-4. **Security by design**: JWT HS256 con issuer pinnato, rate limiting
-   per IP, CORS esplicito, Trivy in CI, distroless in produzione.
-5. **Observability**: OpenTelemetry OTLP, log JSON zap, /metrics
-   esposto in futuro via middleware Prometheus.
+1. **Twelve-Factor**: configurazione via env (vedi
+   [`config/config.go`](../backend/internal/config/config.go)),
+   processi stateless, logging strutturato JSON su stdout, scaling
+   orizzontale di default.
+2. **DDD lite**: pacchetti `modules/<vertical>` ↔ `services` ↔
+   `repository` ↔ `handlers` con dipendenze a senso unico
+   (handlers → services → repository → modules).
+3. **Module isolation**: i moduli verticali non si importano a vicenda.
+   Vedi [`DOMAIN-MODULES.md`](DOMAIN-MODULES.md) per il contratto.
+4. **API-first**: schema REST/WebSocket versionato in `/api/v1/` e
+   documentato in [`API.md`](API.md) prima dell'implementazione.
+5. **Security by design**: HS256 JWT con issuer pinnato, rate-limit
+   per IP con eviction, CORS esplicito, distroless in produzione,
+   redirect-block sull'http client OSRM (anti-SSRF), guardia
+   produzione su segreti deboli.
+6. **Observability**: OpenTelemetry OTLP exporter (opt-in via env),
+   log JSON zap, `/metrics` Prometheus.
 
 ## 2. Modello dati (MongoDB)
 
-Le collezioni primarie rispecchiano gli aggregati di dominio:
+Le collezioni primarie rispecchiano gli aggregati di dominio. Tutte
+sono tenant-scoped: ogni query filtra obbligatoriamente per
+`tenant_id`.
 
 ### 2.1 `shipments`
 
 ```json
 {
-  "_id": "5c3c...",
+  "_id": "5c3c…",
   "tenant_id": "ten_mozzecane_sml",
   "reference": "CMR-2026-04-0001",
   "carrier": "Autotrasporti Rossi Srl",
   "mode": "multimodal",
   "status": "in_transit",
-  "consignor": {
-    "name": "Officine Meccaniche Veronesi",
-    "vat_number": "IT01234567890",
-    "city": "Mozzecane",
-    "province": "VR",
-    "country": "IT"
-  },
+  "consignor": { "name": "…", "vat_number": "IT…", "city": "Mozzecane", "province": "VR", "country": "IT" },
   "consignee": { "name": "Müller GmbH", "city": "München", "country": "DE" },
   "origin": { "type": "Point", "coordinates": [10.778, 45.333] },
   "destination": { "type": "Point", "coordinates": [11.5755, 48.1374] },
-  "waypoints": [
-    {
-      "recorded_at": "2026-04-17T07:12:00Z",
-      "position": { "type": "Point", "coordinates": [11.01, 45.93] },
-      "speed_kph": 82.4,
-      "source": "viasat"
-    }
-  ],
+  "waypoints": [ /* ingested telematics events */ ],
   "current_position": { "type": "Point", "coordinates": [11.01, 45.93] },
   "etd": "2026-04-17T05:00:00Z",
   "eta": "2026-04-17T13:30:00Z",
-  "customs_status": { "declared": true, "document_type": "T1", "mrn": "26IT..." },
-  "docs": [],
   "tags": ["quadrante-europa", "brennero"]
 }
 ```
 
 ### 2.2 `tracking_events`
 
-Eventi immutabili, uno per aggiornamento posizione o transizione di stato. Chiave (`shipment_id`, `sequence`).
+Eventi immutabili, uno per aggiornamento posizione o transizione di
+stato. Chiave `(shipment_id, sequence)`.
 
 ### 2.3 `vehicles`
 
-Anagrafica flotta (targa, categoria EURO, ADR, Telepass, provider telematico).
+Anagrafica flotta — targa (validatore italiano post-1994 +
+storiche), categoria EURO, marker ADR/ATP, provider telematico.
 
 ### 2.4 `drivers`
 
-Anagrafica autisti (patente, CQC, iscrizione Albo Autotrasportatori, ore di guida secondo Reg. 561/2006).
+Anagrafica autisti — patente, CQC, iscrizione Albo Autotrasportatori
+(flag, da verificare manualmente o via integrazione futura).
 
 ### 2.5 `geofences`
 
-Poligoni GeoJSON con tipo (warehouse, customs, port, depot, terminal, rest_area, loading_bay).
+Poligoni GeoJSON con tipo (warehouse, customs, port, depot, terminal,
+rest_area, loading_bay).
 
 ### 2.6 `chain_of_custody`
 
-Append-only, ogni record firmato con hash del precedente (prev_hash → hash, SHA-256 del JSON canonico).
+Append-only, ogni record firmato SHA-256 sul JSON canonico (con
+`time.UTC().Truncate(time.Millisecond)` per round-trip BSON pulito).
+Ogni record contiene `prev_hash` del precedente.
+`services.VerifyChain` ricomputa la catena per audit.
 
-### 2.7 Indici principali
+### 2.7 Collezioni `rifiuti_*`
 
-| Collezione | Indice | Scopo |
-| --- | --- | --- |
-| `shipments` | `{tenant_id:1, reference:1}` unique | deduplica reference per tenant |
-| `shipments` | `{tenant_id:1, status:1, updated_at:-1}` | liste paginate dashboard |
-| `shipments` | `{carrier:1, etd:1}` | reportistica per vettore |
-| `shipments` | `{current_position: 2dsphere}` | query geospaziali (mappa live) |
-| `geofences` | `{polygon: 2dsphere}` | $geoIntersects per dwell detection |
-| `chain_of_custody` | `{shipment_id:1, sequence:1}` unique | append-only ordinato |
+`rifiuti_produttori`, `rifiuti_trasportatori`, `rifiuti_destinatari`,
+`rifiuti_fir`, `rifiuti_registro`. Indici unici su
+`(tenant_id, codice_fiscale)` per le anagrafiche e su
+`(tenant_id, numero_rentri)` sparse per il FIR.
+
+### 2.8 `audit_log`
+
+Audit middleware emette un record per ogni POST/PUT/PATCH/DELETE non-5xx.
+Ingestione async best-effort via `audit.Writer`: sotto pressione
+estrema può perdere record (counter `audit writer dropped records`
+loggato a WARN). Per uso "compliance audit" guarantee strict serve
+incrementare buffer o switch a inserimento sincrono.
 
 ## 3. Diagrammi di sequenza
 
-### 3.1 Ingestione webhook telematico
+### 3.1 Ingest webhook telematica
 
 ```
-Carrier ──► POST /api/v1/shipments/{id}/waypoints ──► Gin handler
-  Gin handler ──► JWT auth + rate limit
-    ──► ShipmentService.RecordWaypoint
-       ──► Mongo: $push waypoints, set current_position
-       ──► Redis: SET logitrack:position:{id}
-       ──► Mongo: insert tracking_events
-       ──► Redis: PUBLISH logitrack:events:tracking
-WebSocket hub ◄── Redis SUBSCRIBE
-  hub ──► broadcast to matching subscribers
-  subscriber ──► Vue SPA: update pin on map + append timeline
+Carrier → POST /api/v1/shipments/{id}/waypoints → Gin handler
+  Gin handler → JWT auth + rate limit + audit
+    → ShipmentService.RecordWaypoint
+       → Mongo: $push waypoints, set current_position
+       → Redis: SET logitrack:position:{id}
+       → Mongo: insert tracking_events
+       → Redis: PUBLISH logitrack:events:tracking
+WebSocket hub ← Redis SUBSCRIBE
+  hub → broadcast to matching subscribers
+  subscriber → Vue SPA: marker update + timeline append
 ```
 
 ### 3.2 Subscription WebSocket
 
 ```
-Browser ──► GET /api/v1/stream/tracking (Upgrade WS, Authorization: Bearer)
-  Gin handler ──► JWT auth
-    ──► upgrader.Upgrade
-    ──► hub.Register(subscriber)
-Browser ──► {op:"subscribe", shipmentId:"…"}
-  handler ──► set subscriber.ShipmentID
-Redis event arrives ──► hub.Broadcast(evt)
-  matching subscribers ──► conn.Write {type:"event", event:{…}}
-Browser periodic ──► {op:"ping"} ──► server {type:"pong"}
+Browser → GET /api/v1/stream/tracking (Upgrade WS, JWT in subprotocol)
+  Gin handler → handshake rate-limit (per-IP, evictable)
+    → JWT extract + validate (HS256 only, alg-pinned)
+    → Origin allow-list check
+    → upgrader.Upgrade
+    → hub.Register(subscriber)
+Browser → {op:"subscribe", shipmentId:"…"}
+  handler → set subscriber.ShipmentID
+Redis event → hub.Broadcast(evt)
+  matching subscribers → conn.Write {type:"event", event:{…}}
+Browser keepalive → {op:"ping"} → server {type:"pong"}
 ```
 
 ### 3.3 Append chain-of-custody
 
 ```
-Operator ──► POST /api/v1/shipments/{id}/custody (handover)
-  Gin handler ──► JWT auth, role=dispatcher|driver
-    ──► ShipmentService.AppendCustody
-       ──► Mongo: find latest sequence + hash
-       ──► compute prev_hash = last.hash
-       ──► compute hash = SHA256(canonical_json without hash field)
-       ──► Mongo: insert chain_of_custody
-    ──► return record
+Operator → POST /api/v1/shipments/{id}/custody (handover)
+  Gin handler → JWT auth, role gating
+    → ShipmentService.AppendCustody
+       → Mongo: find latest sequence + hash for tenant + shipment
+       → compute prev_hash = last.hash
+       → compute hash = SHA256(canonical JSON sans hash field, time UTC ms)
+       → Mongo: insert chain_of_custody
+    → return record
 ```
 
-### 3.4 Dichiarazione dogana AIDA (outbound)
+### 3.4 RENTRI vidimazione FIR
 
 ```
-Operator ──► POST /api/v1/shipments/{id}/customs/declare
-  handler ──► validate MRN / HS / country
-    ──► CustomsService.Declare
-       ──► AIDA client (SOAP/REST) with mTLS cert
-       ──► persist MRN + document_type T1/T2
-       ──► chain_of_custody append (action: "inspection")
-  response: MRN, barcode, PDF URL
+Operator → POST /api/v1/rifiuti/fir/{id}/vidima
+  Gin handler → JWT auth, audit
+    → repo.GetFIR(tenantID, id)
+    → if state != FIRDraft → 422
+    → idempotency = "FIR-" + sha256(tenantID:firID)[:8]
+    → xfir = encoding/xml encode placeholder (CER escaped)
+    → rentri.Client.VidimaFIR(IdempotencyKey, XFIRPayload)
+       → QueuedStub default: deterministic numero, persist locally
+       → live HTTP adapter (when cert available): POST sandbox/prod RENTRI
+    → f.NumeroRENTRI = resp.NumeroRENTRI
+    → f.AdvanceState(FIRVidimato)
+    → repo.UpdateFIR
+  → 200 with { fir, numero_rentri, vidimato_at, qr_code_payload }
 ```
 
-## 4. Integrazioni Italia
+## 4. Integrazioni effettivamente wired oggi
 
-- **AIDA (Agenzia delle Dogane)** — dichiarazioni import/export, T1/T2, notifiche MRN.
-- **RFI / FERTRAM** — prenotazioni slot ferroviari Quadrante Europa, interscambio con Verona QE.
-- **Telepass / ViaCard** — dati di transito casello A22, fusione con waypoint telematici.
-- **Albo Autotrasportatori (Ministero dei Trasporti)** — verifica iscrizione vettori.
-- **Sistema di Interscambio (SDI)** — integrazione opzionale con FatturaPA per fatture di trasporto.
+Il kit volutamente NON include adapter per AIDA, FERTRAM/RFI,
+Telepass o Albo Autotrasportatori. Sono integrazioni reali che si
+aggiungono **per cliente** quando il cliente le chiede e ne paga
+l'integrazione. Dettagli in [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+Quello che il kit fornisce:
+
+- **Telematics ingestion** generico via
+  `POST /api/v1/shipments/{id}/waypoints`. L'adapter per il provider
+  specifico è una piccola unit di codice da scrivere durante
+  l'engagement.
+- **OSRM** opt-in (env `OSRM_BASE_URL`); fallback straight-line +
+  70 km/h se non configurato.
+- **RENTRI** via `rentri.Client` interface +
+  `rentri.QueuedStub` default. L'adapter HTTP live è un
+  one-file-change quando il certificato del cliente è attivo.
 
 ## 5. Architettura di deploy
 
 ### 5.1 Sviluppo (docker-compose)
 
-| Servizio | Immagine | Porta | Volume |
+| Servizio | Immagine | Porta host | Volume |
 | --- | --- | --- | --- |
 | logitrack-backend | build ./backend | 8080 | — |
-| logitrack-frontend | build ./frontend | 5173 | — |
-| logitrack-mongodb | mongo:7 | 27017 | logitrack-mongo-data |
-| logitrack-redis | redis:7-alpine | 6379 | — |
+| logitrack-frontend | build ./frontend | 5174 | — |
+| logitrack-mongodb | mongo:7 | 127.0.0.1:27017 | logitrack-mongo-data |
+| logitrack-redis | redis:7-alpine | 127.0.0.1:6380 | — |
+| logitrack-simulator | build ./backend (Dockerfile.simulator) | — | profile: demo |
 
-### 5.2 Produzione
+Mongo e Redis sono bind-loopback con auth obbligatoria. Vedi
+[`../docker-compose.yml`](../docker-compose.yml).
 
-- **Region**: AWS eu-south-1 (Milano) come primario, Aruba Cloud Arezzo
-  come fallback per tenant a requisito sovrano PA.
-- **Compute**: EKS cluster, 3 node group (system, stateful, general).
-- **Storage**: MongoDB Atlas M30+ con encryption at rest, retention
-  backup 7 giorni; snapshot giornaliero su S3 eu-south-1.
-- **Networking**: VPC 10.0.0.0/16, 3 subnet AZ, NAT gateway per egress,
-  ALB + AWS WAF managed rules + CloudFront davanti al frontend.
-- **Secrets**: AWS Secrets Manager, rotate JWT_SECRET ogni 90 giorni.
+### 5.2 Produzione (per-customer fork)
+
+Non c'è un singolo blueprint cloud "ufficiale": ogni fork sceglie il
+suo deployment. Pattern raccomandati:
+
+- **VPS singolo (1-5 mezzi)**: Aruba Cloud (IT-MI, IT-AR), Hetzner
+  (DE, FI), 4-8 GB RAM, Docker Compose con backup volumi
+  giornaliero su S3-compatibile.
+- **Kubernetes piccolo (5-30 mezzi)**: 3 nodi minimi, MongoDB
+  replicaset 3 nodi, Redis primary+replica, Caddy o nginx-ingress
+  per TLS, CertManager per Let's Encrypt.
+- **On-premise**: docker compose su un server cliente, VPN per
+  l'accesso amministrativo del freelancer, backup su NAS cliente.
+
+Lo zero-downtime deploy non è incluso nel kit "out of the box":
+ogni fork lo aggiunge se necessario.
 
 ## 6. Modalità di fallimento e mitigazione
 
 | Rischio | Impatto | Mitigazione |
 | --- | --- | --- |
-| MongoDB primary down | ingestione interrotta | Replica set 3 nodi, election automatica, buffer Redis fino a 5 min |
-| Redis down | WebSocket fan-out interrotto | Circuit breaker su publish, riconnessione client, replay da Mongo |
-| OSRM self-host down | ETA non aggiornati | fallback su haversine + storico medie A22 |
-| AIDA irraggiungibile | dichiarazioni bloccate | retry esponenziale 24h + coda manuale + alert |
-| Kafka (futuro) lag | eventi in ritardo ma non persi | alert su consumer lag > 30s |
+| MongoDB down | ingest interrotto | replicaset 3 nodi, election; backup snapshot giornaliero |
+| Redis down | WS fan-out interrotto | client retry; SPA reconnect; replay storico via REST |
+| OSRM down o non configurato | ETA meno preciso | straight-line fallback; one-shot WARN log |
+| RENTRI sandbox/prod down | vidimazione bloccata | QueuedStub fallback (idempotency-keyed); coda manuale |
+| Server VPS hard-down | tutto offline | restore da snapshot giornaliero; SLA freelancer 8×5 |
 
-## 7. SLO
+## 7. Service-level expectations
 
-| Metrica | Target | Misurazione |
-| --- | --- | --- |
-| Disponibilità API | 99.9% mensile | probes `/api/health` ogni 30s |
-| Latenza P95 REST | < 300 ms | OpenTelemetry tracing |
-| Latenza WebSocket | < 2 s end-to-end | synthetic agent |
-| Ingest waypoint throughput | ≥ 500 eventi/s | load test k6 |
+LogiTrack è un kit, non un SaaS. Non ci sono SLA contrattuali "di
+prodotto". Il deployment per il singolo cliente può raggiungere:
 
-## 8. Mission II additions (v0.2.0)
+| Metrica | Target tipico (best-effort) |
+| --- | --- |
+| Disponibilità API | 99% / mese su VPS singolo, ≥ 99.9% su K8s replicato |
+| Latenza P95 REST | < 300 ms |
+| Latenza WebSocket end-to-end | < 2 s |
+| Ingest waypoint throughput | ≥ 500 eventi/s (dipende dalla CPU del VPS) |
 
-- **`cmd/simulator`** — telematics emitter. Publishes waypoints at
-  1 Hz for the 3 demo shipments (Verona→Milano A4, Verona→Napoli A1,
-  Verona→München A22/Brennero). See `docs/DEMO-SCRIPT.md`.
-- **`internal/services/eta_service.go`** — moving-average smoother over
-  the latest 20 speed samples (bounded 5–120 km/h). Exposed via
-  `GET /api/v1/shipments/:id/eta`.
-- **`internal/services/route_optimizer.go`** — LRU cache (1000
-  entries), domain allow-list on outbound HTTP, straight-line fallback.
-- **`internal/obs/` + `internal/middleware/prom_mw.go` +
-  `internal/handlers/metrics.go`** — hand-rolled Prometheus exposition
-  broken out of the handlers package to avoid a middleware ↔ handlers
-  import cycle.
-- **`internal/demo/`** — deterministic routes and seeding. Idempotent
-  seed on boot when `SEED_DEMO=true`.
-- **`internal/models/compliance.go`** — Italian plate validator
-  (post-1994 + historical), ADR/ATP class enums, Telepass toll-code
-  record.
-- **`frontend/src/components/ShipmentMap.vue`** — live Leaflet map
-  consuming the WS stream, decoding Polyline6 and placing a moving
-  marker.
+Gli obiettivi reali sono materia di contratto retainer per cliente.
 
-### Data-flow: golden path
+## 8. Module dependency sketch
 
 ```
-  simulator → POST /api/v1/shipments/{id}/waypoints
-           → ShipmentService.RecordWaypoint
-              ├─ Mongo.AppendWaypoint
-              ├─ Redis.CacheLatestPosition
-              ├─ ETAService.UpdateSpeed (moving avg)
-              └─ Redis.PublishTrackingEvent
-                    → WebSocketHub.Run
-                         → StreamHandler (gorilla/websocket)
-                             → browser ShipmentMap.vue
-                                 ↳ marker updates
-                                 ↳ GET /api/v1/shipments/{id}/eta
-                                        → OSRM (cached) or fallback
+modules/logistics       → (standalone)
+modules/rifiuti         → (standalone)
+modules/rifiuti/rentri  → (sub-package, no other modules)
+
+repository → modules/logistics, modules/rifiuti
+services   → modules/logistics, repository
+handlers   → services, middleware, repository, modules/rifiuti, modules/rifiuti/rentri
+middleware → config, audit, problem
+audit      → repository
+cmd/server → handlers, repository, services, demo, audit, config, modules/rifiuti/rentri
+cmd/simulator → demo (only)
 ```
 
-### Module dependency sketch
-
-```
-models → (standalone)
-obs    → (standalone)
-repository → models
-services → models, repository
-handlers → services, middleware, config
-middleware → config, obs
-cmd/server → handlers, repository, services, demo, config
-cmd/simulator → demo  (only; no repository/handler dep)
-```
+I moduli verticali NON si importano a vicenda. Aggiungere un nuovo
+verticale = aggiungere un sotto-package sotto `modules/<name>/`,
+seguire il contratto in [`DOMAIN-MODULES.md`](DOMAIN-MODULES.md), e
+wire alla composition root in `cmd/server/main.go`.
