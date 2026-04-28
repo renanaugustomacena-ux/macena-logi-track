@@ -87,9 +87,40 @@ func TooMany(c *gin.Context, code, detail string) {
 	Emit(c, http.StatusTooManyRequests, code, detail)
 }
 
-// Internal is a shortcut for 500.
+// SafeLogger is the package's hook into the application's logging
+// stack. Implementations log a 500-class error with full server-side
+// detail; the client only ever sees a generic message. Wired once
+// at boot via RegisterLogger.
+type SafeLogger interface {
+	LogInternal(code, traceID, path, detail string)
+}
+
+var safeLogger SafeLogger
+
+// RegisterLogger is called once from the composition root to install
+// the application logger. Calling it more than once replaces the
+// previously-installed logger; the package never panics on a missing
+// logger (it just skips logging — the response is still safe).
+func RegisterLogger(l SafeLogger) {
+	safeLogger = l
+}
+
+// genericInternalDetail is what the client receives for every 500.
+// Real diagnosis happens server-side via the structured log + the
+// traceparent header echoed back via the X-Request-ID middleware.
+const genericInternalDetail = "internal error — correlate via X-Request-ID server-side"
+
+// Internal returns a 500. The supplied `detail` argument is treated
+// as server-side information only: it is logged via the registered
+// SafeLogger and never echoed in the response body. This protects
+// against accidental leakage of Mongo / Redis / driver error strings
+// to clients (mitigates technical-debt item #11 from the 2026-04-28
+// audit).
 func Internal(c *gin.Context, code, detail string) {
-	Emit(c, http.StatusInternalServerError, code, detail)
+	if safeLogger != nil {
+		safeLogger.LogInternal(code, c.GetHeader("traceparent"), c.Request.URL.Path, detail)
+	}
+	Emit(c, http.StatusInternalServerError, code, genericInternalDetail)
 }
 
 // titleFor derives a human-readable title from the machine code.

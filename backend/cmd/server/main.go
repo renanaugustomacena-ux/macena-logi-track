@@ -34,9 +34,23 @@ import (
 	"github.com/logitrack/backend/internal/demo"
 	"github.com/logitrack/backend/internal/handlers"
 	"github.com/logitrack/backend/internal/modules/rifiuti/rentri"
+	"github.com/logitrack/backend/internal/problem"
 	"github.com/logitrack/backend/internal/repository"
 	"github.com/logitrack/backend/internal/services"
 )
+
+// safeLogAdapter wires the structured logger into the problem package
+// so 500-class responses no longer echo upstream error text to clients.
+type safeLogAdapter struct{ log *zap.Logger }
+
+func (a *safeLogAdapter) LogInternal(code, traceID, path, detail string) {
+	a.log.Error("internal error",
+		zap.String("code", code),
+		zap.String("trace_id", traceID),
+		zap.String("path", path),
+		zap.String("detail", detail),
+	)
+}
 
 // version is overridden at build time via `-ldflags "-X main.version=..."`.
 var version = "0.2.0-mission-ii"
@@ -98,6 +112,11 @@ func run() error {
 		zap.String("version", cfg.App.Version),
 		zap.Int("port", cfg.HTTP.Port),
 	)
+
+	// Wire the structured logger into the problem package so every 500
+	// is logged server-side with full context but never leaked to the
+	// client. Closes technical-debt #11 from the 2026-04-28 audit.
+	problem.RegisterLogger(&safeLogAdapter{log: log})
 
 	rootCtx, rootCancel := context.WithCancel(context.Background())
 	defer rootCancel()
@@ -166,7 +185,12 @@ func run() error {
 		}()
 	}
 
-	auditWriter := audit.NewWriter(rootCtx, mongoRepo, log, 1024)
+	auditMode, ok := audit.ParseMode(cfg.App.AuditMode)
+	if !ok {
+		log.Warn("AUDIT_MODE unrecognised, falling back to async",
+			zap.String("requested", cfg.App.AuditMode))
+	}
+	auditWriter := audit.NewWriterWithMode(rootCtx, mongoRepo, log, 1024, auditMode)
 
 	identityStore, err := buildIdentityStore(cfg.Identity)
 	if err != nil {

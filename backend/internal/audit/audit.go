@@ -39,41 +39,95 @@ type Record struct {
 	At            time.Time              `bson:"at" json:"at"`
 }
 
+// Mode selects how Enqueue persists records.
+//
+//   - ModeAsync (default): records flow through a buffered channel
+//     and are written by a background goroutine. Under backpressure
+//     records are DROPPED with a warn-level counter. Lowest latency
+//     on the request path; lossy under sustained burst.
+//   - ModeSync: records are written inline, in the request goroutine.
+//     Adds 1-3 ms per mutation in normal Mongo conditions but
+//     guarantees no records are lost. Choose this when the customer's
+//     DPA / regulatory posture requires guaranteed audit retention
+//     (GDPR Art. 30, D.Lgs. 196/2003 art. 30, ISO 27001 A.12.4.1).
+type Mode int
+
+const (
+	ModeAsync Mode = iota
+	ModeSync
+)
+
+// ParseMode resolves AUDIT_MODE env values to a Mode. Unknown values
+// fall back to async with a logged warning at boot.
+func ParseMode(raw string) (Mode, bool) {
+	switch raw {
+	case "", "async":
+		return ModeAsync, true
+	case "sync":
+		return ModeSync, true
+	default:
+		return ModeAsync, false
+	}
+}
+
 // Writer is the worker that persists Records. Safe for concurrent use.
 type Writer struct {
 	coll    *mongo.Collection
 	queue   chan Record
 	log     *zap.Logger
 	dropped atomic.Uint64
+	mode    Mode
 }
 
-// NewWriter builds a buffered, lossy writer. `buf` is the channel
-// capacity; under backpressure the writer drops records and logs at
-// warn. Choose buf so it holds at least one second of peak write load.
+// NewWriter builds an async writer with the given buffer capacity. To
+// switch to ModeSync use NewWriterWithMode.
 func NewWriter(ctx context.Context, repo *repository.MongoRepository, log *zap.Logger, buf int) *Writer {
+	return NewWriterWithMode(ctx, repo, log, buf, ModeAsync)
+}
+
+// NewWriterWithMode is the explicit constructor that lets the
+// composition root choose the persistence mode. mode=ModeSync makes
+// every Enqueue a synchronous Mongo InsertOne; mode=ModeAsync keeps
+// the historical fire-and-forget behaviour. buf is ignored when
+// mode==ModeSync.
+func NewWriterWithMode(ctx context.Context, repo *repository.MongoRepository, log *zap.Logger, buf int, mode Mode) *Writer {
 	if buf <= 0 {
 		buf = 1024
 	}
 	client := repo.Client()
-	// Note: we depend on the repository exposing the DB name through a
-	// dedicated collection name so we don't have to teach this package
-	// about MongoConfig. Call Database via the client and rely on the
-	// collection const.
 	coll := client.Database(repo.DatabaseName()).Collection(repository.CollectionAuditLog)
 	w := &Writer{
-		coll:  coll,
-		queue: make(chan Record, buf),
-		log:   log,
+		coll: coll,
+		log:  log,
+		mode: mode,
 	}
-	go w.run(ctx)
+	if mode == ModeAsync {
+		w.queue = make(chan Record, buf)
+		go w.run(ctx)
+	}
+	log.Info("audit writer initialised",
+		zap.String("mode", map[Mode]string{ModeAsync: "async", ModeSync: "sync"}[mode]),
+		zap.Int("buf", buf),
+	)
 	return w
 }
 
-// Enqueue submits a record for async persistence. Returns false if the
-// queue is full (record dropped).
+// Enqueue submits a record for persistence. In async mode it returns
+// false if the queue is full (record dropped). In sync mode it always
+// returns true after a successful write (or false on Mongo error,
+// logged at warn).
 func (w *Writer) Enqueue(r Record) bool {
 	if r.At.IsZero() {
 		r.At = time.Now().UTC()
+	}
+	if w.mode == ModeSync {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if _, err := w.coll.InsertOne(ctx, r); err != nil {
+			w.log.Warn("audit sync insert failed", zap.Error(err))
+			return false
+		}
+		return true
 	}
 	select {
 	case w.queue <- r:

@@ -1,35 +1,43 @@
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-50 bg-slate-900/60 flex items-start justify-center overflow-auto p-4 lt-no-print"
-    role="dialog"
-    aria-modal="true"
-    :aria-label="`Anteprima FIR ${fir?.numeroProgressivo ?? ''}`"
-    @click.self="$emit('close')"
-  >
-    <div class="lt-print-root w-full max-w-[210mm]">
-      <!-- Toolbar — hidden during print via .lt-no-print -->
-      <div class="lt-no-print bg-white rounded-t-md shadow flex items-center justify-between px-4 py-2 border-b border-slate-200">
-        <div class="text-sm text-slate-600">
-          Anteprima FIR <span class="font-mono">{{ fir?.numeroProgressivo }}</span>
-          — uscita stampa A4 verticale
-        </div>
-        <div class="flex gap-2">
-          <button
-            type="button"
-            class="text-sm px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-50"
-            @click="$emit('close')"
-          >Chiudi</button>
-          <button
-            type="button"
-            class="text-sm px-3 py-1.5 rounded bg-logitrack-blue text-white hover:bg-blue-700"
-            @click="onPrint"
-          >Stampa / PDF</button>
-        </div>
-      </div>
+  <Teleport to="body">
+    <div
+      v-if="open"
+      class="lt-print-portal"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="`Anteprima FIR ${fir?.numeroProgressivo ?? ''}`"
+    >
+      <!-- Backdrop (hidden in print) -->
+      <div
+        class="lt-print-backdrop fixed inset-0 z-40 bg-slate-900/60"
+        @click="$emit('close')"
+      ></div>
 
-      <!-- The printed page itself -->
-      <article v-if="fir" class="lt-fir-page bg-white shadow p-8 text-[10pt] leading-snug text-slate-900">
+      <!-- Centered scrollable container -->
+      <div class="fixed inset-0 z-50 flex items-start justify-center overflow-auto p-4 pointer-events-none">
+        <div class="lt-print-document w-full max-w-[210mm] pointer-events-auto">
+          <!-- Toolbar (hidden in print) -->
+          <div class="lt-print-toolbar bg-white rounded-t-md shadow flex items-center justify-between px-4 py-2 border-b border-slate-200">
+            <div class="text-sm text-slate-600">
+              Anteprima FIR <span class="font-mono">{{ fir?.numeroProgressivo }}</span>
+              — uscita stampa A4 verticale
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="text-sm px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-50"
+                @click="$emit('close')"
+              >Chiudi</button>
+              <button
+                type="button"
+                class="text-sm px-3 py-1.5 rounded bg-logitrack-blue text-white hover:bg-blue-700"
+                @click="onPrint"
+              >Stampa / PDF</button>
+            </div>
+          </div>
+
+          <!-- The printed page itself -->
+          <article v-if="fir" class="lt-fir-page bg-white shadow p-8 text-[10pt] leading-snug text-slate-900">
         <!-- Intestazione -->
         <header class="border-b-2 border-slate-900 pb-2 mb-3">
           <div class="flex items-start justify-between">
@@ -314,9 +322,11 @@
             La copia produttore (art. 188-bis c. 4) deve essere restituita entro 90 giorni dalla consegna.
           </p>
         </footer>
-      </article>
+          </article>
+        </div>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

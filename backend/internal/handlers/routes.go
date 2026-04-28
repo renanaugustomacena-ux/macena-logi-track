@@ -78,37 +78,49 @@ func Register(r *gin.Engine, deps Dependencies) {
 	if deps.Audit != nil {
 		v1.Use(middleware.AuditMiddleware(deps.Audit))
 	}
+
+	// Role policy:
+	//   - "operator" can issue every regular mutation: create shipment,
+	//     ingest waypoints, manage fleet, manage rifiuti anagrafiche,
+	//     create + transition FIR.
+	//   - "admin" supersedes operator and is reserved for high-blast-
+	//     radius actions (RENTRI vidimazione of a FIR has explicit
+	//     admin gating because a vidimazione cannot be undone).
+	//   - GET endpoints stay available to any authenticated user in
+	//     the tenant — read access is granted by JWT presence alone.
+	mutate := middleware.RequireRole("operator", "admin")
+	adminOnly := middleware.RequireRole("admin")
 	{
 		shipments := v1.Group("/shipments")
 		{
-			shipments.POST("", deps.Ship.Create)
+			shipments.POST("", mutate, deps.Ship.Create)
 			shipments.GET("", deps.Ship.List)
 			shipments.GET("/:id", deps.Ship.Get)
-			shipments.POST("/:id/waypoints", deps.Ship.AddWaypoint)
+			shipments.POST("/:id/waypoints", mutate, deps.Ship.AddWaypoint)
 			shipments.GET("/:id/trace", deps.Ship.Trace)
 			shipments.GET("/:id/position", deps.Track.LatestPosition)
 			shipments.GET("/:id/eta", deps.ETA.Get)
 		}
 		routes := v1.Group("/routes")
 		{
-			routes.POST("/optimize", deps.Route.Optimize)
+			routes.POST("/optimize", mutate, deps.Route.Optimize)
 		}
 		if deps.Fleet != nil {
 			vehicles := v1.Group("/vehicles")
 			{
-				vehicles.POST("", deps.Fleet.CreateVehicle)
+				vehicles.POST("", mutate, deps.Fleet.CreateVehicle)
 				vehicles.GET("", deps.Fleet.ListVehicles)
 				vehicles.GET("/:id", deps.Fleet.GetVehicle)
 			}
 			drivers := v1.Group("/drivers")
 			{
-				drivers.POST("", deps.Fleet.CreateDriver)
+				drivers.POST("", mutate, deps.Fleet.CreateDriver)
 				drivers.GET("", deps.Fleet.ListDrivers)
 				drivers.GET("/:id", deps.Fleet.GetDriver)
 			}
 			geofences := v1.Group("/geofences")
 			{
-				geofences.POST("", deps.Fleet.CreateGeofence)
+				geofences.POST("", mutate, deps.Fleet.CreateGeofence)
 				geofences.GET("", deps.Fleet.ListGeofences)
 				geofences.GET("/:id", deps.Fleet.GetGeofence)
 			}
@@ -116,17 +128,18 @@ func Register(r *gin.Engine, deps Dependencies) {
 		if deps.Rifiuto != nil {
 			rif := v1.Group("/rifiuti")
 			{
-				rif.POST("/produttori", deps.Rifiuto.CreateProduttore)
+				rif.POST("/produttori", mutate, deps.Rifiuto.CreateProduttore)
 				rif.GET("/produttori", deps.Rifiuto.ListProduttori)
-				rif.POST("/trasportatori", deps.Rifiuto.CreateTrasportatore)
+				rif.POST("/trasportatori", mutate, deps.Rifiuto.CreateTrasportatore)
 				rif.GET("/trasportatori", deps.Rifiuto.ListTrasportatori)
-				rif.POST("/destinatari", deps.Rifiuto.CreateDestinatario)
+				rif.POST("/destinatari", mutate, deps.Rifiuto.CreateDestinatario)
 				rif.GET("/destinatari", deps.Rifiuto.ListDestinatari)
-				rif.POST("/fir", deps.Rifiuto.CreateFIR)
+				rif.POST("/fir", mutate, deps.Rifiuto.CreateFIR)
 				rif.GET("/fir", deps.Rifiuto.ListFIR)
 				rif.GET("/fir/:id", deps.Rifiuto.GetFIR)
-				rif.POST("/fir/:id/transition", deps.Rifiuto.TransitionFIR)
-				rif.POST("/fir/:id/vidima", deps.Rifiuto.VidimaFIR)
+				rif.POST("/fir/:id/transition", mutate, deps.Rifiuto.TransitionFIR)
+				// Vidima is admin-only: irreversible, regulatory-binding.
+				rif.POST("/fir/:id/vidima", adminOnly, deps.Rifiuto.VidimaFIR)
 				rif.GET("/cer/:code", deps.Rifiuto.CERCheck)
 			}
 		}

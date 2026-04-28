@@ -158,68 +158,83 @@ body {
 }
 
 /* =====================================================================
- * FIR print stylesheet — applies when the user prints the FIR preview.
- * Hides chrome (header, banner, navigation), forces black-on-white,
- * sets A4 margins, and disables shadows so the document looks like an
- * official module.
+ * Print stylesheet for FIR / CMR preview.
+ *
+ * Pattern: the preview component teleports its content to <body> as a
+ * direct child with class .lt-print-portal. In print mode we hide
+ * every other body child via display:none, force the portal to take
+ * the full page, and let the document flow normally. This avoids the
+ * blank-page failure of the `body * { visibility: hidden }` approach
+ * when the modal sits inside positioned ancestors.
  * ================================================================== */
+.lt-print-only {
+  display: none;
+}
+
 @media print {
   @page {
     size: A4 portrait;
     margin: 12mm 12mm 14mm 12mm;
   }
 
+  html,
   body {
     background: white !important;
     color: black !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Hide everything except the .lt-print-root subtree. */
-  body * {
-    visibility: hidden !important;
+  /* Hide every direct body child except the print portal. */
+  body > *:not(.lt-print-portal):not(script):not(style) {
+    display: none !important;
   }
-  .lt-print-root,
-  .lt-print-root * {
-    visibility: visible !important;
+
+  /* Print portal becomes the document. */
+  body > .lt-print-portal {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: none !important;
   }
-  .lt-print-root {
-    position: absolute;
-    inset: 0;
+  .lt-print-backdrop,
+  .lt-print-toolbar {
+    display: none !important;
+  }
+
+  .lt-print-document {
+    position: static !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     background: white !important;
     color: black !important;
+    max-width: none !important;
+    width: 100% !important;
   }
 
-  /* Remove dashboard chrome */
-  .lt-no-print,
-  header,
-  nav,
-  footer,
-  [role='banner'],
-  [role='status'].lt-no-print {
-    display: none !important;
-  }
-
-  .lt-fir-page {
+  .lt-fir-page,
+  .lt-cmr-page {
     box-shadow: none !important;
     border: none !important;
     page-break-after: always;
+    background: white !important;
   }
-  .lt-fir-page:last-child {
+  .lt-fir-page:last-child,
+  .lt-cmr-page:last-child {
     page-break-after: auto;
   }
 
-  /* Print-only utility classes */
   .lt-print-only {
     display: block !important;
   }
   a[href]::after {
     content: '';
   }
-}
-
-.lt-print-only {
-  display: none;
 }
