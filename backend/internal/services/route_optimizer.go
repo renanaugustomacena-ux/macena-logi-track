@@ -64,25 +64,37 @@ var ErrOSRMHostNotAllowed = errors.New("osrm: host not in allow-list")
 
 // OSRMOptimizer is the default production implementation.
 type OSRMOptimizer struct {
-	cfg               config.OSRMConfig
-	client            *http.Client
-	log               *zap.Logger
-	cache             *lruCache
+	cfg                config.OSRMConfig
+	client             *http.Client
+	log                *zap.Logger
+	cache              *lruCache
 	truckDowngradeWarn sync.Once
+	noOSRMWarn         sync.Once
 }
 
 // NewOSRMOptimizer wires a RouteOptimizer backed by an OSRM server.
 // The returned implementation is safe for concurrent use.
+//
+// The HTTP client refuses to follow redirects. A compromised or
+// MITM'd OSRM service could otherwise return a 30x to an internal
+// host (e.g. 169.254.169.254 metadata) and bypass the BaseURL
+// allow-list, since the allow-list is only checked for the initial
+// request URL.
 func NewOSRMOptimizer(cfg config.OSRMConfig, log *zap.Logger) *OSRMOptimizer {
 	size := cfg.CacheSize
 	if size <= 0 {
 		size = 1000
 	}
 	return &OSRMOptimizer{
-		cfg:    cfg,
-		client: &http.Client{Timeout: cfg.Timeout},
-		log:    log,
-		cache:  newLRUCache(size),
+		cfg: cfg,
+		client: &http.Client{
+			Timeout: cfg.Timeout,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+		log:   log,
+		cache: newLRUCache(size),
 	}
 }
 
@@ -110,10 +122,19 @@ func (o *OSRMOptimizer) OptimiseRoute(ctx context.Context, req RouteRequest) (*R
 		return &clone, nil
 	}
 
+	// No OSRM configured = fall back silently after a one-shot WARN.
+	// This is the kit default: OSRM is opt-in, customers wire their own
+	// self-hosted instance per deployment.
+	if strings.TrimSpace(o.cfg.BaseURL) == "" {
+		o.noOSRMWarn.Do(func() {
+			o.log.Warn("osrm: OSRM_BASE_URL not configured, using straight-line fallback for every route request")
+		})
+		return o.fallback(req), nil
+	}
 	// Validate the configured host against the allow-list BEFORE any
-	// DNS resolution or outbound socket is opened. This is a deliberate
-	// SSRF mitigation: even an attacker with write access to OSRM_BASE_URL
-	// cannot redirect traffic to an unexpected host.
+	// DNS resolution or outbound socket is opened. SSRF mitigation:
+	// even with write access to OSRM_BASE_URL an attacker cannot
+	// redirect traffic to an unexpected host.
 	base, err := url.Parse(strings.TrimRight(o.cfg.BaseURL, "/"))
 	if err != nil || base.Host == "" {
 		o.log.Warn("osrm: invalid base url, using fallback", zap.Error(err))

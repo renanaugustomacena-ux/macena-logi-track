@@ -26,15 +26,9 @@ type Config struct {
 	Mongo     MongoConfig
 	Redis     RedisConfig
 	JWT       JWTConfig
-	Session   SessionConfig
 	OTEL      OTELConfig
 	OSRM      OSRMConfig
-	AIDA      AIDAConfig
-	RFI       RFIConfig
-	Telepass  TelepassConfig
-	Albo      AlboConfig
 	Identity  IdentityConfig
-	Kafka     KafkaConfig
 	Geofence  GeofenceConfig
 	RateLimit RateLimitConfig
 	WebSocket WebSocketConfig
@@ -76,12 +70,16 @@ type RedisConfig struct {
 	Timeout  time.Duration `envconfig:"REDIS_TIMEOUT" default:"3s"`
 }
 
-// JWTConfig describes the signing strategy and token TTLs.
+// JWTConfig describes the signing strategy and token TTL.
+//
+// The kit issues access tokens only — there is no refresh endpoint.
+// On expiry the client re-authenticates. Customers that need a
+// sliding session integrate their corporate IDP at the IdentityStore
+// seam in handlers/auth.go and let the IDP own session lifecycle.
 type JWTConfig struct {
-	Secret     string        `envconfig:"JWT_SECRET" required:"true"`
-	AccessTTL  time.Duration `envconfig:"JWT_ACCESS_TTL" default:"15m"`
-	RefreshTTL time.Duration `envconfig:"JWT_REFRESH_TTL" default:"720h"`
-	Issuer     string        `envconfig:"JWT_ISSUER" default:"logitrack.it"`
+	Secret    string        `envconfig:"JWT_SECRET" required:"true"`
+	AccessTTL time.Duration `envconfig:"JWT_ACCESS_TTL" default:"15m"`
+	Issuer    string        `envconfig:"JWT_ISSUER" default:"logitrack.it"`
 }
 
 // OTELConfig configures the OpenTelemetry OTLP exporter.
@@ -105,61 +103,11 @@ type OTELConfig struct {
 // the "driving" profile and emits a one-shot WARN so the operator
 // knows the route plan ignores HGV restrictions.
 type OSRMConfig struct {
-	BaseURL      string        `envconfig:"OSRM_BASE_URL" default:"https://router.project-osrm.org"`
+	BaseURL      string        `envconfig:"OSRM_BASE_URL" default:""`
 	Timeout      time.Duration `envconfig:"OSRM_TIMEOUT" default:"5s"`
-	AllowedHosts []string      `envconfig:"OSRM_ALLOWED_HOSTS" default:"router.project-osrm.org,osrm.logitrack.local"`
+	AllowedHosts []string      `envconfig:"OSRM_ALLOWED_HOSTS" default:""`
 	CacheSize    int           `envconfig:"OSRM_CACHE_SIZE" default:"1000"`
 	TruckProfile string        `envconfig:"OSRM_TRUCK_PROFILE" default:""`
-}
-
-// SessionConfig enforces the v2.0 §12 session-timeout rules:
-// 15-minute idle window (matching JWT access TTL) and 12-hour absolute
-// ceiling on refresh. These values are enforced server-side by the JWT
-// middleware — they are NOT advisory fields the client can ignore.
-type SessionConfig struct {
-	IdleTimeout     time.Duration `envconfig:"SESSION_IDLE_TIMEOUT" default:"15m"`
-	AbsoluteTimeout time.Duration `envconfig:"SESSION_ABSOLUTE_TIMEOUT" default:"12h"`
-}
-
-// AIDAConfig references the Agenzia delle Dogane customs API.
-// LOGITRACK_* env names are the canonical ones documented in the
-// remediation brief; the legacy AIDA_* names are kept for backwards
-// compatibility during Mission II.5 rollout.
-type AIDAConfig struct {
-	BaseURL string `envconfig:"LOGITRACK_AIDA_API_BASE" default:""`
-	APIKey  string `envconfig:"LOGITRACK_AIDA_API_KEY" default:""`
-}
-
-// RFIConfig references the FERTRAM/RFI intermodal rail-slot API.
-//
-// FERTRAM is mTLS-protected in production. MTLSCertFile / MTLSKeyFile
-// are the PEM-encoded client certificate and private key issued by
-// RFI to the operator. They must be supplied as a pair: providing
-// only one is a construction-time error so the operator does not
-// chase a confusing 403 from FERTRAM. MTLSCAFile is optional and
-// defaults to the system root pool (which trusts the publicly-signed
-// fertram.rfi.it certificate); set it to a private CA bundle when
-// FERTRAM presents a private/test certificate.
-type RFIConfig struct {
-	BaseURL      string `envconfig:"LOGITRACK_RFI_API_BASE" default:""`
-	ClientID     string `envconfig:"LOGITRACK_RFI_CLIENT_ID" default:""`
-	ClientSecret string `envconfig:"LOGITRACK_RFI_CLIENT_SECRET" default:""`
-	MTLSCertFile string `envconfig:"LOGITRACK_RFI_MTLS_CERT_FILE" default:""`
-	MTLSKeyFile  string `envconfig:"LOGITRACK_RFI_MTLS_KEY_FILE" default:""`
-	MTLSCAFile   string `envconfig:"LOGITRACK_RFI_MTLS_CA_FILE" default:""`
-}
-
-// TelepassConfig references the ViaCard/Telepass Business API.
-type TelepassConfig struct {
-	BaseURL    string `envconfig:"LOGITRACK_TELEPASS_API_BASE" default:""`
-	APIKey     string `envconfig:"LOGITRACK_TELEPASS_API_KEY" default:""`
-	ContractID string `envconfig:"LOGITRACK_TELEPASS_CONTRACT_ID" default:""`
-}
-
-// AlboConfig references the Albo Nazionale degli Autotrasportatori API.
-type AlboConfig struct {
-	BaseURL string `envconfig:"LOGITRACK_ALBO_API_BASE" default:""`
-	APIKey  string `envconfig:"LOGITRACK_ALBO_API_KEY" default:""`
 }
 
 // IdentityConfig selects the identity backend. Values:
@@ -177,12 +125,6 @@ type IdentityConfig struct {
 	DemoPassword string   `envconfig:"LOGITRACK_IDENTITY_DEMO_PASSWORD" default:""`
 	DemoTenantID string   `envconfig:"LOGITRACK_IDENTITY_DEMO_TENANT" default:"demo-tenant"`
 	DemoRoles    []string `envconfig:"LOGITRACK_IDENTITY_DEMO_ROLES" default:"operator"`
-}
-
-// KafkaConfig is a placeholder for future event-streaming roll-out.
-type KafkaConfig struct {
-	Brokers []string `envconfig:"KAFKA_BROKERS" default:""`
-	Topic   string   `envconfig:"KAFKA_TOPIC" default:"logitrack.events.v1"`
 }
 
 // GeofenceConfig tunes the spatial-index resolution.
@@ -237,9 +179,8 @@ func Load() (*Config, error) {
 }
 
 // guardProductionSecrets refuses to boot a production process with
-// demo-quality secrets. The rule closes RA-002 (default JWT secret)
-// and makes the "sellable product" contract enforceable at startup
-// rather than at audit time.
+// demo-quality secrets. Catches: weak JWT secret, unauthenticated
+// MongoDB / Redis URIs, empty demo identity password.
 func (c *Config) guardProductionSecrets() error {
 	if !c.IsProduction() {
 		return nil
@@ -250,17 +191,36 @@ func (c *Config) guardProductionSecrets() error {
 		"change-me-in-production-use-openssl-rand-hex-32",
 		"dev",
 		"test",
+		"password",
+		"devonly-rotate-before-deploy",
 	}
-	for _, w := range weak {
-		if strings.EqualFold(c.JWT.Secret, w) {
-			return fmt.Errorf("config: JWT_SECRET is a known-weak placeholder (%q); "+
-				"generate a 32-byte secret with `openssl rand -hex 32` and inject via secrets manager", w)
-		}
+	if isWeak(c.JWT.Secret, weak) {
+		return fmt.Errorf("config: JWT_SECRET is a known-weak placeholder; " +
+			"generate a 32-byte secret with `openssl rand -hex 32` and inject via secrets manager")
 	}
 	if len(c.JWT.Secret) < 32 {
 		return fmt.Errorf("config: JWT_SECRET must be >= 32 characters in production, got %d", len(c.JWT.Secret))
 	}
+	if !strings.Contains(c.Mongo.URI, "@") {
+		return fmt.Errorf("config: MONGO_URI lacks credentials in production (must be mongodb://user:pass@host)")
+	}
+	if !strings.Contains(c.Redis.URL, "@") {
+		return fmt.Errorf("config: REDIS_URL lacks credentials in production (must be redis://user:pass@host)")
+	}
+	if c.Identity.Backend == "memory" && (c.Identity.DemoPassword == "" || isWeak(c.Identity.DemoPassword, weak)) {
+		return fmt.Errorf("config: LOGITRACK_IDENTITY_BACKEND=memory but LOGITRACK_IDENTITY_DEMO_PASSWORD is empty or weak; " +
+			"set LOGITRACK_IDENTITY_BACKEND=disabled in production unless seeding a real demo password")
+	}
 	return nil
+}
+
+func isWeak(value string, weak []string) bool {
+	for _, w := range weak {
+		if strings.EqualFold(value, w) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsProduction reports whether the application is running in a

@@ -6,33 +6,25 @@ import (
 
 	"github.com/logitrack/backend/internal/audit"
 	"github.com/logitrack/backend/internal/config"
-	"github.com/logitrack/backend/internal/integrations/aida"
-	"github.com/logitrack/backend/internal/integrations/albo"
-	"github.com/logitrack/backend/internal/integrations/rfi"
-	"github.com/logitrack/backend/internal/integrations/telepass"
 	"github.com/logitrack/backend/internal/middleware"
 )
 
 // Dependencies bundles the singletons a route-setup call needs.
 type Dependencies struct {
-	Config         *config.Config
-	Logger         *zap.Logger
-	Health         *HealthHandler
-	Ready          *ReadyHandler
-	Metrics        *MetricsHandler
-	Ship           *ShipmentHandler
-	Track          *TrackingHandler
-	Route          *RouteHandler
-	Stream         *StreamHandler
-	ETA            *ETAHandler
-	Fleet          *FleetHandler
-	Rifiuto        *RifiutoHandler
-	Auth           *AuthHandler
-	Audit          *audit.Writer
-	AidaClient     *aida.Client
-	RfiClient      *rfi.Client
-	TelepassClient *telepass.Client
-	AlboClient     *albo.Client
+	Config  *config.Config
+	Logger  *zap.Logger
+	Health  *HealthHandler
+	Ready   *ReadyHandler
+	Metrics *MetricsHandler
+	Ship    *ShipmentHandler
+	Track   *TrackingHandler
+	Route   *RouteHandler
+	Stream  *StreamHandler
+	ETA     *ETAHandler
+	Fleet   *FleetHandler
+	Rifiuto *RifiutoHandler
+	Auth    *AuthHandler
+	Audit   *audit.Writer
 }
 
 // Register wires every route onto the provided engine. Routes are
@@ -69,14 +61,15 @@ func Register(r *gin.Engine, deps Dependencies) {
 	// handshake rate-limit are applied there too.
 	r.GET("/api/v1/stream/tracking", deps.Stream.Handle)
 
-	// Auth routes are public (login + refresh produce tokens). Rate
-	// limiting is applied globally; auth-tier override lives in the
-	// rate_limit middleware.
+	// Auth route — login only. The kit deliberately omits a refresh
+	// endpoint: short-lived access tokens (15m) plus a fresh login on
+	// expiry keep the surface minimal. Customers that need a sliding
+	// session integrate their existing IDP (Keycloak, Azure AD, Okta)
+	// at the IdentityStore seam in handlers/auth.go.
 	if deps.Auth != nil {
 		authGroup := r.Group("/api/v1/auth")
 		{
 			authGroup.POST("/login", deps.Auth.Login)
-			authGroup.POST("/refresh", deps.Auth.Refresh)
 		}
 	}
 
@@ -138,13 +131,4 @@ func Register(r *gin.Engine, deps Dependencies) {
 			}
 		}
 	}
-
-	// Suppress unused-field warnings for integration clients — they are
-	// held in Dependencies so future handlers (customs declarations,
-	// rail slot bookings, toll feeds, carrier verification) can wire
-	// them without changing this signature.
-	_ = deps.AidaClient
-	_ = deps.RfiClient
-	_ = deps.TelepassClient
-	_ = deps.AlboClient
 }

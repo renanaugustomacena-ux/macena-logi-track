@@ -19,8 +19,6 @@ import (
 const (
 	ChannelTrackingEvents = "logitrack:events:tracking"
 	KeyLatestPositionTmpl = "logitrack:position:%s" // %s = shipmentID
-	KeyRateLimitTmpl      = "logitrack:rl:%s:%s"    // %s tenant, %s bucket
-	KeyRefreshTokenTmpl   = "logitrack:rt:%s"       // %s = jti
 )
 
 // PositionTTL is how long we keep the "last known position" cache
@@ -104,18 +102,4 @@ func (r *RedisRepository) PublishTrackingEvent(ctx context.Context, evt logistic
 // subscription when finished.
 func (r *RedisRepository) SubscribeTrackingEvents(ctx context.Context) *redis.PubSub {
 	return r.client.Subscribe(ctx, ChannelTrackingEvents)
-}
-
-// StoreRefreshToken persists a refresh-token JTI with its expiry so
-// revocation and one-time-use semantics can be enforced.
-func (r *RedisRepository) StoreRefreshToken(ctx context.Context, jti, userID string, ttl time.Duration) error {
-	key := fmt.Sprintf(KeyRefreshTokenTmpl, jti)
-	return r.client.Set(ctx, key, userID, ttl).Err()
-}
-
-// RevokeRefreshToken deletes the stored JTI (used on logout or
-// rotation).
-func (r *RedisRepository) RevokeRefreshToken(ctx context.Context, jti string) error {
-	key := fmt.Sprintf(KeyRefreshTokenTmpl, jti)
-	return r.client.Del(ctx, key).Err()
 }

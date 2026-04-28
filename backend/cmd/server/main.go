@@ -33,10 +33,6 @@ import (
 	"github.com/logitrack/backend/internal/config"
 	"github.com/logitrack/backend/internal/demo"
 	"github.com/logitrack/backend/internal/handlers"
-	"github.com/logitrack/backend/internal/integrations/aida"
-	"github.com/logitrack/backend/internal/integrations/albo"
-	"github.com/logitrack/backend/internal/integrations/rfi"
-	"github.com/logitrack/backend/internal/integrations/telepass"
 	"github.com/logitrack/backend/internal/modules/rifiuti/rentri"
 	"github.com/logitrack/backend/internal/repository"
 	"github.com/logitrack/backend/internal/services"
@@ -170,40 +166,6 @@ func run() error {
 		}()
 	}
 
-	// Italian integration clients — all four are instantiated
-	// unconditionally. When an env var is missing the client returns
-	// ErrNotConfigured on every call; services surface that to the
-	// operator instead of silently fabricating data. This closes
-	// H-01 .. H-04 from LogiTrack-GAPS.md.
-	aidaClient := aida.New(aida.Config{BaseURL: cfg.AIDA.BaseURL, APIKey: cfg.AIDA.APIKey})
-	rfiClient, err := rfi.New(rfi.Config{
-		BaseURL:      cfg.RFI.BaseURL,
-		ClientID:     cfg.RFI.ClientID,
-		ClientSecret: cfg.RFI.ClientSecret,
-		MTLSCertFile: cfg.RFI.MTLSCertFile,
-		MTLSKeyFile:  cfg.RFI.MTLSKeyFile,
-		MTLSCAFile:   cfg.RFI.MTLSCAFile,
-	})
-	if err != nil {
-		// mTLS misconfiguration is a hard boot failure: the alternative
-		// is silently falling back to plain TLS and producing a
-		// confusing 403 from FERTRAM later. Fail-fast at boot so the
-		// operator notices.
-		return fmt.Errorf("rfi client init: %w", err)
-	}
-	telepassClient := telepass.New(telepass.Config{
-		BaseURL:    cfg.Telepass.BaseURL,
-		APIKey:     cfg.Telepass.APIKey,
-		ContractID: cfg.Telepass.ContractID,
-	})
-	alboClient := albo.New(albo.Config{BaseURL: cfg.Albo.BaseURL, APIKey: cfg.Albo.APIKey})
-	log.Info("integrations registered",
-		zap.Bool("aida_configured", aidaClient.Configured()),
-		zap.Bool("rfi_configured", rfiClient.Configured()),
-		zap.Bool("telepass_configured", telepassClient.Configured()),
-		zap.Bool("albo_configured", alboClient.Configured()),
-	)
-
 	auditWriter := audit.NewWriter(rootCtx, mongoRepo, log, 1024)
 
 	identityStore, err := buildIdentityStore(cfg.Identity)
@@ -212,24 +174,20 @@ func run() error {
 	}
 
 	deps := handlers.Dependencies{
-		Config:         cfg,
-		Logger:         log,
-		Health:         handlers.NewHealthHandler(cfg, mongoRepo, redisRepo),
-		Ready:          handlers.NewReadyHandler(cfg, mongoRepo, redisRepo, seedDone),
-		Metrics:        handlers.NewMetricsHandler(cfg.App.Name, cfg.App.Version),
-		Ship:           handlers.NewShipmentHandler(shipmentSvc),
-		Track:          handlers.NewTrackingHandler(trackingSvc),
-		Route:          handlers.NewRouteHandler(routeSvc),
-		Stream:         handlers.NewStreamHandler(hub, log, cfg.JWT, cfg.WebSocket),
-		ETA:            handlers.NewETAHandler(etaSvc),
-		Fleet:          handlers.NewFleetHandler(mongoRepo),
-		Rifiuto:        handlers.NewRifiutoHandler(mongoRepo, rentri.NewQueuedStub()),
-		Auth:           handlers.NewAuthHandler(cfg.JWT, identityStore, redisRepo, cfg.Session),
-		Audit:          auditWriter,
-		AidaClient:     aidaClient,
-		RfiClient:      rfiClient,
-		TelepassClient: telepassClient,
-		AlboClient:     alboClient,
+		Config:  cfg,
+		Logger:  log,
+		Health:  handlers.NewHealthHandler(cfg, mongoRepo, redisRepo),
+		Ready:   handlers.NewReadyHandler(cfg, mongoRepo, redisRepo, seedDone),
+		Metrics: handlers.NewMetricsHandler(cfg.App.Name, cfg.App.Version),
+		Ship:    handlers.NewShipmentHandler(shipmentSvc),
+		Track:   handlers.NewTrackingHandler(trackingSvc),
+		Route:   handlers.NewRouteHandler(routeSvc),
+		Stream:  handlers.NewStreamHandler(hub, log, cfg.JWT, cfg.WebSocket),
+		ETA:     handlers.NewETAHandler(etaSvc),
+		Fleet:   handlers.NewFleetHandler(mongoRepo),
+		Rifiuto: handlers.NewRifiutoHandler(mongoRepo, rentri.NewQueuedStub()),
+		Auth:    handlers.NewAuthHandler(cfg.JWT, identityStore, redisRepo),
+		Audit:   auditWriter,
 	}
 
 	if cfg.IsProduction() {

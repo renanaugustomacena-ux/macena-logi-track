@@ -8,6 +8,7 @@ package handlers
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/xml"
 	"errors"
 	"net/http"
 	"strconv"
@@ -299,7 +300,18 @@ func (h *RifiutoHandler) VidimaFIR(c *gin.Context) {
 	}
 	hash := sha256.Sum256([]byte(claims.TenantID + ":" + f.ID))
 	idempotency := "FIR-" + hex.EncodeToString(hash[:8])
-	xfir := []byte("<formulario><cer>" + string(f.CER) + "</cer></formulario>") // placeholder until xFIR XSD encoder lands
+	// Placeholder xFIR payload until the RENTRI v1.0 XSD encoder lands.
+	// Built via encoding/xml so user-controlled fields are escaped —
+	// switching to the schema-driven encoder later will be a drop-in
+	// replacement of the marshalled type.
+	xfir, err := xml.Marshal(struct {
+		XMLName xml.Name `xml:"formulario"`
+		CER     string   `xml:"cer"`
+	}{CER: string(f.CER)})
+	if err != nil {
+		problem.Internal(c, "xfir_marshal_failed", err.Error())
+		return
+	}
 	resp, err := h.rentri.VidimaFIR(c.Request.Context(), rentri.VidimazioneRequest{
 		TenantID:       claims.TenantID,
 		IdempotencyKey: idempotency,

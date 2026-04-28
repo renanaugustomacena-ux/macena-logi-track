@@ -88,12 +88,15 @@ func (s *ShipmentService) CreateShipment(ctx context.Context, shp *logistics.Shi
 	}
 	hash, err := computeHash(genesis)
 	if err != nil {
-		s.log.Warn("genesis custody hash failed", zap.String("shipment_id", shp.ID), zap.Error(err))
-		return nil
+		// Failing the genesis hash leaves the chain uninitialised — that
+		// is a tamper-evidence claim we cannot let lapse silently. Surface
+		// the failure so the caller sees the shipment was created without
+		// a valid custody root and can take a compensating action.
+		return fmt.Errorf("create shipment: genesis custody hash: %w", err)
 	}
 	genesis.Hash = hash
 	if err := s.mongo.AppendCustody(ctx, genesis); err != nil {
-		s.log.Warn("genesis custody failed", zap.String("shipment_id", shp.ID), zap.Error(err))
+		return fmt.Errorf("create shipment: genesis custody append: %w", err)
 	}
 	return nil
 }
