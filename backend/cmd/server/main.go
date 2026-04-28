@@ -37,6 +37,7 @@ import (
 	"github.com/logitrack/backend/internal/integrations/albo"
 	"github.com/logitrack/backend/internal/integrations/rfi"
 	"github.com/logitrack/backend/internal/integrations/telepass"
+	"github.com/logitrack/backend/internal/modules/rifiuti/rentri"
 	"github.com/logitrack/backend/internal/repository"
 	"github.com/logitrack/backend/internal/services"
 )
@@ -162,6 +163,9 @@ func run() error {
 			if err := demo.Seed(rootCtx, mongoRepo, shipmentSvc, routeSvc, cfg.Demo.TenantID, log); err != nil {
 				log.Warn("demo seed skipped", zap.Error(err))
 			}
+			if err := demo.SeedRifiuti(rootCtx, mongoRepo, cfg.Demo.TenantID, log); err != nil {
+				log.Warn("rifiuti demo seed skipped", zap.Error(err))
+			}
 			seedDone.Store(true)
 		}()
 	}
@@ -219,6 +223,7 @@ func run() error {
 		Stream:         handlers.NewStreamHandler(hub, log, cfg.JWT, cfg.WebSocket),
 		ETA:            handlers.NewETAHandler(etaSvc),
 		Fleet:          handlers.NewFleetHandler(mongoRepo),
+		Rifiuto:        handlers.NewRifiutoHandler(mongoRepo, rentri.NewQueuedStub()),
 		Auth:           handlers.NewAuthHandler(cfg.JWT, identityStore, redisRepo, cfg.Session),
 		Audit:          auditWriter,
 		AidaClient:     aidaClient,

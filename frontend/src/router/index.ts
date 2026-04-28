@@ -5,6 +5,7 @@ import { hasAccessToken } from '@/lib/tokenStore';
 const HomeView = () => import('@/views/HomeView.vue');
 const ShipmentView = () => import('@/views/ShipmentView.vue');
 const LoginView = () => import('@/views/LoginView.vue');
+const RifiutiView = () => import('@/views/RifiutiView.vue');
 
 declare module 'vue-router' {
   // Re-export so `meta.requiresAuth` is type-checked.
@@ -34,6 +35,12 @@ const routes: RouteRecordRaw[] = [
     component: ShipmentView,
     props: true,
     meta: { title: 'Dettaglio spedizione', requiresAuth: true },
+  },
+  {
+    path: '/rifiuti',
+    name: 'rifiuti',
+    component: RifiutiView,
+    meta: { title: 'Rifiuti speciali', requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];

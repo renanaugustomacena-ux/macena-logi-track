@@ -113,6 +113,9 @@ func (r *MongoRepository) EnsureIndexes(ctx context.Context) error {
 	if _, err := r.db.Collection(CollectionCustody).Indexes().CreateMany(ctx, custodyIdx); err != nil {
 		return fmt.Errorf("custody indexes: %w", err)
 	}
+	if err := r.EnsureRifiutiIndexes(ctx); err != nil {
+		return fmt.Errorf("rifiuti indexes: %w", err)
+	}
 	r.log.Info("mongo indexes ensured", zap.String("database", r.db.Name()))
 	return nil
 }

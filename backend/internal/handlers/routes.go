@@ -26,6 +26,7 @@ type Dependencies struct {
 	Stream         *StreamHandler
 	ETA            *ETAHandler
 	Fleet          *FleetHandler
+	Rifiuto        *RifiutoHandler
 	Auth           *AuthHandler
 	Audit          *audit.Writer
 	AidaClient     *aida.Client
@@ -117,6 +118,23 @@ func Register(r *gin.Engine, deps Dependencies) {
 				geofences.POST("", deps.Fleet.CreateGeofence)
 				geofences.GET("", deps.Fleet.ListGeofences)
 				geofences.GET("/:id", deps.Fleet.GetGeofence)
+			}
+		}
+		if deps.Rifiuto != nil {
+			rif := v1.Group("/rifiuti")
+			{
+				rif.POST("/produttori", deps.Rifiuto.CreateProduttore)
+				rif.GET("/produttori", deps.Rifiuto.ListProduttori)
+				rif.POST("/trasportatori", deps.Rifiuto.CreateTrasportatore)
+				rif.GET("/trasportatori", deps.Rifiuto.ListTrasportatori)
+				rif.POST("/destinatari", deps.Rifiuto.CreateDestinatario)
+				rif.GET("/destinatari", deps.Rifiuto.ListDestinatari)
+				rif.POST("/fir", deps.Rifiuto.CreateFIR)
+				rif.GET("/fir", deps.Rifiuto.ListFIR)
+				rif.GET("/fir/:id", deps.Rifiuto.GetFIR)
+				rif.POST("/fir/:id/transition", deps.Rifiuto.TransitionFIR)
+				rif.POST("/fir/:id/vidima", deps.Rifiuto.VidimaFIR)
+				rif.GET("/cer/:code", deps.Rifiuto.CERCheck)
 			}
 		}
 	}

@@ -12,6 +12,7 @@
         </router-link>
         <nav aria-label="Principale" class="flex gap-4 text-sm items-center">
           <router-link to="/" class="hover:underline">Spedizioni</router-link>
+          <router-link to="/rifiuti" class="hover:underline">Rifiuti</router-link>
           <button
             v-if="authed"
             type="button"
