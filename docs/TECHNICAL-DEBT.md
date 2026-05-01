@@ -105,3 +105,21 @@ the kit-honesty audit pass.
   via `encoding/xml` (so escaping is correct). The real RENTRI v1.0
   XSD-driven encoder lands together with the live HTTP adapter.
 - **Trigger:** RENTRI live adapter ships → XSD-driven encoder.
+
+## 14. Backend test coverage at ~9% vs 80% policy target
+
+- **State:** total backend coverage is ~9%. Domain modules clear the
+  bar (`internal/modules/rifiuti` 93.3%, `…/rifiuti/rentri` 87.1%,
+  `internal/integrations/httpretry` 88.9%). Platform layers ship
+  with no tests yet: `internal/handlers` (3.9%), `internal/services`,
+  `internal/repository`, `internal/middleware`, `internal/audit`,
+  `internal/obs`, `internal/config`, `internal/demo`,
+  `cmd/simulator` are at 0%.
+- **CI behaviour:** the workflow keeps the 80% gate as the *target*
+  (per the global CLAUDE.md testing rule) but emits it as a `::warning::`
+  rather than failing the job, so the kit can ship while the platform
+  test backlog is worked down.
+- **Trigger / ratchet plan:** raise the gate by ~10 points whenever
+  a layer crosses 50% (handlers first, then services, repository,
+  middleware). When the total clears 80%, flip the gate back to a
+  hard `exit 1`.
