@@ -1,6 +1,8 @@
 module github.com/logitrack/backend
 
-go 1.26
+go 1.24
+
+toolchain go1.26.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
