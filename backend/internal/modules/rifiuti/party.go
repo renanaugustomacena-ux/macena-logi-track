@@ -94,13 +94,13 @@ type Destinatario struct {
 // ErrAlboScaduto is returned when the carrier's Albo enrolment is
 // past its expiry date at the time of FIR validation. A FIR signed
 // with an expired Albo is administratively void.
-var ErrAlboScaduto = errors.New("Albo Gestori Ambientali iscrizione scaduta")
+var ErrAlboScaduto = errors.New("iscrizione Albo Gestori Ambientali scaduta")
 
 // ErrAlboCategoriaInsufficient is returned when the carrier's Albo
 // categoria does not cover the waste class on the FIR — most
 // commonly a Cat 4-only carrier attempting to sign a FIR for a CER
 // pericoloso, which requires Cat 5.
-var ErrAlboCategoriaInsufficient = errors.New("Albo categoria does not cover waste class")
+var ErrAlboCategoriaInsufficient = errors.New("categoria Albo does not cover waste class")
 
 // ErrDestinatarioNotAuthorisedForCER is returned when the
 // destinatario's autorizzazione does not include the CER on the FIR.

@@ -37,7 +37,7 @@ func TestDoRetriesTransient503(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do returned error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 after retry, got %d", resp.StatusCode)
 	}
@@ -67,7 +67,7 @@ func TestDoStopsAtMaxAttempts(t *testing.T) {
 	})
 	if err == nil {
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		t.Fatal("expected an error after MaxAttempts of 502")
 	}
@@ -98,7 +98,7 @@ func TestDoDoesNotRetry4xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("404 should be returned not retried: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("expected 404 surfaced, got %d", resp.StatusCode)
 	}

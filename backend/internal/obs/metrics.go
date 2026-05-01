@@ -19,35 +19,35 @@ import (
 func Render(w http.ResponseWriter, service, version string, started time.Time) {
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "# HELP logitrack_build_info Static build metadata.\n")
-	fmt.Fprintf(w, "# TYPE logitrack_build_info gauge\n")
-	fmt.Fprintf(w, "logitrack_build_info{service=%q,version=%q,go_version=%q} 1\n",
+	_, _ = fmt.Fprintf(w, "# HELP logitrack_build_info Static build metadata.\n")
+	_, _ = fmt.Fprintf(w, "# TYPE logitrack_build_info gauge\n")
+	_, _ = fmt.Fprintf(w, "logitrack_build_info{service=%q,version=%q,go_version=%q} 1\n",
 		service, version, runtime.Version())
 
-	fmt.Fprintf(w, "# HELP process_start_time_seconds Start time of the process since UNIX epoch.\n")
-	fmt.Fprintf(w, "# TYPE process_start_time_seconds gauge\n")
-	fmt.Fprintf(w, "process_start_time_seconds %d\n", started.Unix())
+	_, _ = fmt.Fprintf(w, "# HELP process_start_time_seconds Start time of the process since UNIX epoch.\n")
+	_, _ = fmt.Fprintf(w, "# TYPE process_start_time_seconds gauge\n")
+	_, _ = fmt.Fprintf(w, "process_start_time_seconds %d\n", started.Unix())
 
-	fmt.Fprintf(w, "# HELP logitrack_http_requests_total HTTP requests, labelled by method/path/status.\n")
-	fmt.Fprintf(w, "# TYPE logitrack_http_requests_total counter\n")
+	_, _ = fmt.Fprintf(w, "# HELP logitrack_http_requests_total HTTP requests, labelled by method/path/status.\n")
+	_, _ = fmt.Fprintf(w, "# TYPE logitrack_http_requests_total counter\n")
 	httpCounters.Range(func(key, value any) bool {
 		k := key.(string)
 		v := value.(*uint64)
-		fmt.Fprintf(w, "logitrack_http_requests_total{%s} %d\n", k, atomic.LoadUint64(v))
+		_, _ = fmt.Fprintf(w, "logitrack_http_requests_total{%s} %d\n", k, atomic.LoadUint64(v))
 		return true
 	})
 
-	fmt.Fprintf(w, "# HELP logitrack_ws_connections_active Active WebSocket subscribers.\n")
-	fmt.Fprintf(w, "# TYPE logitrack_ws_connections_active gauge\n")
-	fmt.Fprintf(w, "logitrack_ws_connections_active %d\n", atomic.LoadInt64(&wsConnections))
+	_, _ = fmt.Fprintf(w, "# HELP logitrack_ws_connections_active Active WebSocket subscribers.\n")
+	_, _ = fmt.Fprintf(w, "# TYPE logitrack_ws_connections_active gauge\n")
+	_, _ = fmt.Fprintf(w, "logitrack_ws_connections_active %d\n", atomic.LoadInt64(&wsConnections))
 
-	fmt.Fprintf(w, "# HELP logitrack_ws_broadcasts_total Total events broadcast.\n")
-	fmt.Fprintf(w, "# TYPE logitrack_ws_broadcasts_total counter\n")
-	fmt.Fprintf(w, "logitrack_ws_broadcasts_total %d\n", atomic.LoadUint64(&wsBroadcasts))
+	_, _ = fmt.Fprintf(w, "# HELP logitrack_ws_broadcasts_total Total events broadcast.\n")
+	_, _ = fmt.Fprintf(w, "# TYPE logitrack_ws_broadcasts_total counter\n")
+	_, _ = fmt.Fprintf(w, "logitrack_ws_broadcasts_total %d\n", atomic.LoadUint64(&wsBroadcasts))
 
-	fmt.Fprintf(w, "# HELP go_goroutines Current goroutines.\n")
-	fmt.Fprintf(w, "# TYPE go_goroutines gauge\n")
-	fmt.Fprintf(w, "go_goroutines %d\n", runtime.NumGoroutine())
+	_, _ = fmt.Fprintf(w, "# HELP go_goroutines Current goroutines.\n")
+	_, _ = fmt.Fprintf(w, "# TYPE go_goroutines gauge\n")
+	_, _ = fmt.Fprintf(w, "go_goroutines %d\n", runtime.NumGoroutine())
 }
 
 // Global counters — package-private so callers go through the helpers.

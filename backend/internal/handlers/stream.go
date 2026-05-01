@@ -145,7 +145,7 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 	}
 	unregister := h.hub.Register(sub)
 	defer unregister()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Per-connection inbound limiter: ~20 messages/s with burst 40.
 	connLimiter := rate.NewLimiter(rate.Limit(h.wsCfg.RateLimitRPS), h.wsCfg.RateLimitBurst)

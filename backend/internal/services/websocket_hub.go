@@ -89,7 +89,7 @@ func (h *WebSocketHub) Broadcast(evt logistics.TrackingEvent) {
 // is cancelled. Call in its own goroutine at server boot.
 func (h *WebSocketHub) Run(ctx context.Context) error {
 	sub := h.redis.SubscribeTrackingEvents(ctx)
-	defer sub.Close()
+	defer func() { _ = sub.Close() }()
 	ch := sub.Channel()
 	h.log.Info("ws hub subscribed to redis channel", zap.String("channel", repository.ChannelTrackingEvents))
 	for {

@@ -301,7 +301,7 @@ func cacheKey(req RouteRequest) string {
 		if len(wp.Coordinates) != 2 {
 			continue
 		}
-		sb.WriteString(fmt.Sprintf("|%.5f,%.5f", wp.Coordinates[0], wp.Coordinates[1]))
+		_, _ = fmt.Fprintf(&sb, "|%.5f,%.5f", wp.Coordinates[0], wp.Coordinates[1])
 	}
 	return sb.String()
 }

@@ -148,7 +148,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("redis init: %w", err)
 	}
-	defer redisRepo.Close()
+	defer func() { _ = redisRepo.Close() }()
 
 	routeSvc := services.NewOSRMOptimizer(cfg.OSRM, log)
 	etaSvc := services.NewETAService(mongoRepo, redisRepo, routeSvc, log)

@@ -63,7 +63,7 @@ func (r *MongoRepository) ListVehicles(ctx context.Context, tenantID string, act
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	var out []logistics.Vehicle
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (r *MongoRepository) ListDrivers(ctx context.Context, tenantID string, acti
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	var out []logistics.Driver
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (r *MongoRepository) ListGeofences(ctx context.Context, tenantID string, ac
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	var out []logistics.Geofence
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
