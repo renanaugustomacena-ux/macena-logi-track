@@ -134,7 +134,7 @@ jobs:
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4.1.7
-      - uses: actions/setup-node@v4.0.4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
@@ -150,7 +150,7 @@ jobs:
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4.1.7
-      - uses: actions/setup-node@v4.0.4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
@@ -164,7 +164,7 @@ jobs:
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4.1.7
-      - uses: actions/setup-node@v4.0.4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
@@ -180,7 +180,7 @@ jobs:
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4.1.7
-      - uses: actions/setup-node@v4.0.4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
