@@ -48,12 +48,13 @@ jobs:
       - name: go vet
         run: go vet ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6.1.1
+        # action v8 supports both v1 and v2 binary lines and ships with Go 1.25
+        uses: golangci/golangci-lint-action@v8.0.0
         with:
-          # v1.60 was built with go1.23 and refuses to lint a module targeting
-          # go1.26 ("the Go language version used to build golangci-lint is
-          # lower than the targeted Go version"). v1.64+ is built with go1.26.
-          version: v1.64
+          # v2.x of golangci-lint is built with Go 1.25 and lints modules that
+          # declare `go 1.25` in go.mod. Older v1.60 / v1.64 binaries refuse
+          # because their build-time Go is older than the module target.
+          version: v2.1
           working-directory: backend
           args: --timeout=5m
 
