@@ -219,7 +219,7 @@ func postWaypoint(ctx context.Context, client *http.Client, cfg config, token, s
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("status %d", resp.StatusCode)
 	}
@@ -232,7 +232,7 @@ func waitReady(ctx context.Context, client *http.Client, apiBase string) error {
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiBase+"/api/health", nil)
 		resp, err := client.Do(req)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if resp.StatusCode == 200 {
 				return nil
 			}

@@ -235,7 +235,7 @@ func (o *OSRMOptimizer) callOSRM(ctx context.Context, base *url.URL, req RouteRe
 	if err != nil {
 		return nil, fmt.Errorf("osrm get: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("osrm status %d", resp.StatusCode)
 	}

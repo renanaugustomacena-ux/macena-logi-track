@@ -118,7 +118,7 @@ func (r *MongoRepository) ListProduttori(ctx context.Context, tenantID string, l
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	out := []rifiuti.Produttore{}
 	for cur.Next(ctx) {
 		var p rifiuti.Produttore
@@ -170,7 +170,7 @@ func (r *MongoRepository) ListTrasportatori(ctx context.Context, tenantID string
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	out := []rifiuti.Trasportatore{}
 	for cur.Next(ctx) {
 		var t rifiuti.Trasportatore
@@ -222,7 +222,7 @@ func (r *MongoRepository) ListDestinatari(ctx context.Context, tenantID string, 
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	out := []rifiuti.Destinatario{}
 	for cur.Next(ctx) {
 		var d rifiuti.Destinatario
@@ -279,7 +279,7 @@ func (r *MongoRepository) ListFIR(ctx context.Context, tenantID string, state ri
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	out := []rifiuti.FIR{}
 	for cur.Next(ctx) {
 		var f rifiuti.FIR

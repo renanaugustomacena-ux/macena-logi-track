@@ -178,7 +178,7 @@ func (r *MongoRepository) ListShipments(ctx context.Context, f ShipmentFilter) (
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	var out []logistics.Shipment
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func (r *MongoRepository) ListCustody(ctx context.Context, tenantID, shipmentID 
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer func() { _ = cur.Close(ctx) }()
 	var out []logistics.CustodyRecord
 	if err := cur.All(ctx, &out); err != nil {
 		return nil, err
