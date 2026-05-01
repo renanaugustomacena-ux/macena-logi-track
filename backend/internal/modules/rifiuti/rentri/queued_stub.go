@@ -28,23 +28,23 @@ import (
 // QueuedStub is safe for concurrent use; the internal mutex
 // protects both the in-memory store and the FIFO position counter.
 type QueuedStub struct {
-	mu        sync.Mutex
-	now       func() time.Time
-	pending   []QueuedItem
-	firByNum  map[string]FIRSummary
-	xmlByNum  map[string][]byte
+	mu          sync.Mutex
+	now         func() time.Time
+	pending     []QueuedItem
+	firByNum    map[string]FIRSummary
+	xmlByNum    map[string][]byte
 	progressivo int64
 }
 
 // QueuedItem is one queued, unsent operation. The platform exposes
 // the slice via Drain so an operator UI can show what is waiting.
 type QueuedItem struct {
-	Kind         QueuedKind
-	TenantID     string
-	Numero       string
+	Kind           QueuedKind
+	TenantID       string
+	Numero         string
 	IdempotencyKey string
-	Payload      []byte
-	EnqueuedAt   time.Time
+	Payload        []byte
+	EnqueuedAt     time.Time
 }
 
 // QueuedKind discriminates the operation a queued item represents.

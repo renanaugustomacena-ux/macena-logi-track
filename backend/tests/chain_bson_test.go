@@ -14,18 +14,18 @@ import (
 // chain-of-custody integrity defect identified during the
 // 2026-04-27 audit. The defect mechanic:
 //
-//   1. computeHash json.Marshals a CustodyRecord that includes
-//      time.Time fields with monotonic-clock readings and nanosecond
-//      precision.
-//   2. Mongo persists time.Time as BSON Date, which has millisecond
-//      precision and no monotonic-clock semantics.
-//   3. After read-back, the same record decodes to the same wall time
-//      truncated to the millisecond. Recomputing the hash on the
-//      decoded record produces a different SHA-256 because the marshal
-//      output differs by sub-millisecond bytes.
-//   4. VerifyChain compares the stored hash to the recomputed hash and
-//      sees a mismatch — the chain is reported broken on every read,
-//      even when nobody tampered with it.
+//  1. computeHash json.Marshals a CustodyRecord that includes
+//     time.Time fields with monotonic-clock readings and nanosecond
+//     precision.
+//  2. Mongo persists time.Time as BSON Date, which has millisecond
+//     precision and no monotonic-clock semantics.
+//  3. After read-back, the same record decodes to the same wall time
+//     truncated to the millisecond. Recomputing the hash on the
+//     decoded record produces a different SHA-256 because the marshal
+//     output differs by sub-millisecond bytes.
+//  4. VerifyChain compares the stored hash to the recomputed hash and
+//     sees a mismatch — the chain is reported broken on every read,
+//     even when nobody tampered with it.
 //
 // The fix in computeHash canonicalises every time field to UTC at
 // millisecond precision before marshalling. Because BSON also stores

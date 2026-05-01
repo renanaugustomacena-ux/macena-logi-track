@@ -34,20 +34,20 @@ const (
 // id capture internal movements (es. movimentazione in deposito
 // temporaneo) that the regulation still requires.
 type RegistroEntry struct {
-	ID             string             `bson:"_id,omitempty" json:"id"`
-	TenantID       string             `bson:"tenant_id" json:"tenantId"`
-	OperatoreID    string             `bson:"operatore_id" json:"operatoreId"`
-	OperatoreRuolo OperatoreRuolo     `bson:"operatore_ruolo" json:"operatoreRuolo"`
-	NumeroProgressivo int64           `bson:"numero_progressivo" json:"numeroProgressivo"`
-	DataOperazione time.Time          `bson:"data_operazione" json:"dataOperazione"`
-	Operazione     RegistroOperazione `bson:"operazione" json:"operazione"`
-	CER            CERCode            `bson:"cer" json:"cer"`
-	QuantitaGrammi int64              `bson:"quantita_grammi" json:"quantitaGrammi"`
-	StatoFisico    StatoFisico        `bson:"stato_fisico" json:"statoFisico"`
-	FIRID          string             `bson:"fir_id,omitempty" json:"firId,omitempty"`
-	NumeroRENTRI   string             `bson:"numero_rentri,omitempty" json:"numeroRentri,omitempty"`
-	Annotazioni    string             `bson:"annotazioni,omitempty" json:"annotazioni,omitempty"`
-	CreatedAt      time.Time          `bson:"created_at" json:"createdAt"`
+	ID                string             `bson:"_id,omitempty" json:"id"`
+	TenantID          string             `bson:"tenant_id" json:"tenantId"`
+	OperatoreID       string             `bson:"operatore_id" json:"operatoreId"`
+	OperatoreRuolo    OperatoreRuolo     `bson:"operatore_ruolo" json:"operatoreRuolo"`
+	NumeroProgressivo int64              `bson:"numero_progressivo" json:"numeroProgressivo"`
+	DataOperazione    time.Time          `bson:"data_operazione" json:"dataOperazione"`
+	Operazione        RegistroOperazione `bson:"operazione" json:"operazione"`
+	CER               CERCode            `bson:"cer" json:"cer"`
+	QuantitaGrammi    int64              `bson:"quantita_grammi" json:"quantitaGrammi"`
+	StatoFisico       StatoFisico        `bson:"stato_fisico" json:"statoFisico"`
+	FIRID             string             `bson:"fir_id,omitempty" json:"firId,omitempty"`
+	NumeroRENTRI      string             `bson:"numero_rentri,omitempty" json:"numeroRentri,omitempty"`
+	Annotazioni       string             `bson:"annotazioni,omitempty" json:"annotazioni,omitempty"`
+	CreatedAt         time.Time          `bson:"created_at" json:"createdAt"`
 }
 
 // OperatoreRuolo identifies which role's registro the entry belongs
@@ -57,10 +57,10 @@ type RegistroEntry struct {
 type OperatoreRuolo string
 
 const (
-	RuoloProduttore     OperatoreRuolo = "produttore"
-	RuoloTrasportatore  OperatoreRuolo = "trasportatore"
-	RuoloDestinatario   OperatoreRuolo = "destinatario"
-	RuoloIntermediario  OperatoreRuolo = "intermediario"
+	RuoloProduttore    OperatoreRuolo = "produttore"
+	RuoloTrasportatore OperatoreRuolo = "trasportatore"
+	RuoloDestinatario  OperatoreRuolo = "destinatario"
+	RuoloIntermediario OperatoreRuolo = "intermediario"
 )
 
 // ErrRegistroEntryImmutable is returned when a caller attempts to

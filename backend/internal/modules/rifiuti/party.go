@@ -19,21 +19,21 @@ import (
 // producer must denounce the missing return to the provincia
 // (D.Lgs. 152/2006 art. 188-bis comma 4).
 type Produttore struct {
-	ID                 string `bson:"_id,omitempty" json:"id"`
-	TenantID           string `bson:"tenant_id" json:"tenantId"`
-	RagioneSociale     string `bson:"ragione_sociale" json:"ragioneSociale"`
-	CodiceFiscale      string `bson:"codice_fiscale" json:"codiceFiscale"`
-	PartitaIVA         string `bson:"partita_iva" json:"partitaIva"`
-	CodiceUnitaLocale  string `bson:"codice_unita_locale" json:"codiceUnitaLocale"`
-	Indirizzo          string `bson:"indirizzo" json:"indirizzo"`
-	CAP                string `bson:"cap" json:"cap"`
-	Comune             string `bson:"comune" json:"comune"`
-	Provincia          string `bson:"provincia" json:"provincia"`
-	AttivitaCodiceATECO string `bson:"ateco" json:"ateco"`
-	ContattoEmail      string `bson:"contatto_email,omitempty" json:"contattoEmail,omitempty"`
-	ContattoTelefono   string `bson:"contatto_telefono,omitempty" json:"contattoTelefono,omitempty"`
-	CreatedAt          time.Time `bson:"created_at" json:"createdAt"`
-	UpdatedAt          time.Time `bson:"updated_at" json:"updatedAt"`
+	ID                  string    `bson:"_id,omitempty" json:"id"`
+	TenantID            string    `bson:"tenant_id" json:"tenantId"`
+	RagioneSociale      string    `bson:"ragione_sociale" json:"ragioneSociale"`
+	CodiceFiscale       string    `bson:"codice_fiscale" json:"codiceFiscale"`
+	PartitaIVA          string    `bson:"partita_iva" json:"partitaIva"`
+	CodiceUnitaLocale   string    `bson:"codice_unita_locale" json:"codiceUnitaLocale"`
+	Indirizzo           string    `bson:"indirizzo" json:"indirizzo"`
+	CAP                 string    `bson:"cap" json:"cap"`
+	Comune              string    `bson:"comune" json:"comune"`
+	Provincia           string    `bson:"provincia" json:"provincia"`
+	AttivitaCodiceATECO string    `bson:"ateco" json:"ateco"`
+	ContattoEmail       string    `bson:"contatto_email,omitempty" json:"contattoEmail,omitempty"`
+	ContattoTelefono    string    `bson:"contatto_telefono,omitempty" json:"contattoTelefono,omitempty"`
+	CreatedAt           time.Time `bson:"created_at" json:"createdAt"`
+	UpdatedAt           time.Time `bson:"updated_at" json:"updatedAt"`
 }
 
 // Trasportatore is the carrier moving the rifiuto from the
@@ -50,18 +50,18 @@ type Produttore struct {
 // TenantID is still the customer's, and the Trasportatore record
 // carries the sub-vettore's distinct codice fiscale + Albo data.
 type Trasportatore struct {
-	ID                  string         `bson:"_id,omitempty" json:"id"`
-	TenantID            string         `bson:"tenant_id" json:"tenantId"`
-	RagioneSociale      string         `bson:"ragione_sociale" json:"ragioneSociale"`
-	CodiceFiscale       string         `bson:"codice_fiscale" json:"codiceFiscale"`
-	PartitaIVA          string         `bson:"partita_iva" json:"partitaIva"`
-	AlboCategoria       AlboCategoria  `bson:"albo_categoria" json:"alboCategoria"`
-	AlboClasse          AlboClasse     `bson:"albo_classe" json:"alboClasse"`
+	ID                   string        `bson:"_id,omitempty" json:"id"`
+	TenantID             string        `bson:"tenant_id" json:"tenantId"`
+	RagioneSociale       string        `bson:"ragione_sociale" json:"ragioneSociale"`
+	CodiceFiscale        string        `bson:"codice_fiscale" json:"codiceFiscale"`
+	PartitaIVA           string        `bson:"partita_iva" json:"partitaIva"`
+	AlboCategoria        AlboCategoria `bson:"albo_categoria" json:"alboCategoria"`
+	AlboClasse           AlboClasse    `bson:"albo_classe" json:"alboClasse"`
 	AlboNumeroIscrizione string        `bson:"albo_numero_iscrizione" json:"alboNumeroIscrizione"`
-	AlboScadenza        time.Time      `bson:"albo_scadenza" json:"alboScadenza"`
-	SedeLegale          string         `bson:"sede_legale" json:"sedeLegale"`
-	CreatedAt           time.Time      `bson:"created_at" json:"createdAt"`
-	UpdatedAt           time.Time      `bson:"updated_at" json:"updatedAt"`
+	AlboScadenza         time.Time     `bson:"albo_scadenza" json:"alboScadenza"`
+	SedeLegale           string        `bson:"sede_legale" json:"sedeLegale"`
+	CreatedAt            time.Time     `bson:"created_at" json:"createdAt"`
+	UpdatedAt            time.Time     `bson:"updated_at" json:"updatedAt"`
 }
 
 // Destinatario is the impianto that receives the rifiuto and
@@ -75,20 +75,20 @@ type Trasportatore struct {
 // addressable corridor for our first ICP) so the platform can ship
 // a curated catalogue on day one.
 type Destinatario struct {
-	ID                       string               `bson:"_id,omitempty" json:"id"`
-	TenantID                 string               `bson:"tenant_id" json:"tenantId"`
-	RagioneSociale           string               `bson:"ragione_sociale" json:"ragioneSociale"`
-	CodiceFiscale            string               `bson:"codice_fiscale" json:"codiceFiscale"`
-	PartitaIVA               string               `bson:"partita_iva" json:"partitaIva"`
-	Indirizzo                string               `bson:"indirizzo" json:"indirizzo"`
-	Comune                   string               `bson:"comune" json:"comune"`
-	Provincia                string               `bson:"provincia" json:"provincia"`
-	AutorizzazioneNumero     string               `bson:"autorizzazione_numero" json:"autorizzazioneNumero"`
-	AutorizzazioneScadenza   time.Time            `bson:"autorizzazione_scadenza" json:"autorizzazioneScadenza"`
-	OperazioniAutorizzate    []ImpiantoOperazione `bson:"operazioni_autorizzate" json:"operazioniAutorizzate"`
-	CERAutorizzati           []CERCode            `bson:"cer_autorizzati" json:"cerAutorizzati"`
-	CreatedAt                time.Time            `bson:"created_at" json:"createdAt"`
-	UpdatedAt                time.Time            `bson:"updated_at" json:"updatedAt"`
+	ID                     string               `bson:"_id,omitempty" json:"id"`
+	TenantID               string               `bson:"tenant_id" json:"tenantId"`
+	RagioneSociale         string               `bson:"ragione_sociale" json:"ragioneSociale"`
+	CodiceFiscale          string               `bson:"codice_fiscale" json:"codiceFiscale"`
+	PartitaIVA             string               `bson:"partita_iva" json:"partitaIva"`
+	Indirizzo              string               `bson:"indirizzo" json:"indirizzo"`
+	Comune                 string               `bson:"comune" json:"comune"`
+	Provincia              string               `bson:"provincia" json:"provincia"`
+	AutorizzazioneNumero   string               `bson:"autorizzazione_numero" json:"autorizzazioneNumero"`
+	AutorizzazioneScadenza time.Time            `bson:"autorizzazione_scadenza" json:"autorizzazioneScadenza"`
+	OperazioniAutorizzate  []ImpiantoOperazione `bson:"operazioni_autorizzate" json:"operazioniAutorizzate"`
+	CERAutorizzati         []CERCode            `bson:"cer_autorizzati" json:"cerAutorizzati"`
+	CreatedAt              time.Time            `bson:"created_at" json:"createdAt"`
+	UpdatedAt              time.Time            `bson:"updated_at" json:"updatedAt"`
 }
 
 // ErrAlboScaduto is returned when the carrier's Albo enrolment is

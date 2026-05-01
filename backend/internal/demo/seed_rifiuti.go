@@ -35,18 +35,18 @@ func SeedRifiuti(ctx context.Context, mongo *repository.MongoRepository, tenantI
 	// Produttore — fittizia officina meccanica con sede a Verona Sud.
 	if _, err := mongo.GetProduttore(ctx, tenantID, DemoProduttoreID); errors.Is(err, repository.ErrNotFound) {
 		p := &rifiuti.Produttore{
-			ID:                 DemoProduttoreID,
-			TenantID:           tenantID,
-			RagioneSociale:     "Officina Meccanica Demo S.r.l.",
-			CodiceFiscale:      "00000000001",
-			PartitaIVA:         "00000000001",
-			CodiceUnitaLocale:  "VR-DEMO-01",
-			Indirizzo:          "Via dell'Industria 1",
-			CAP:                "37060",
-			Comune:             "Mozzecane",
-			Provincia:          "VR",
+			ID:                  DemoProduttoreID,
+			TenantID:            tenantID,
+			RagioneSociale:      "Officina Meccanica Demo S.r.l.",
+			CodiceFiscale:       "00000000001",
+			PartitaIVA:          "00000000001",
+			CodiceUnitaLocale:   "VR-DEMO-01",
+			Indirizzo:           "Via dell'Industria 1",
+			CAP:                 "37060",
+			Comune:              "Mozzecane",
+			Provincia:           "VR",
 			AttivitaCodiceATECO: "25.62.00",
-			ContattoEmail:      "officina@demo.invalid",
+			ContattoEmail:       "officina@demo.invalid",
 		}
 		if err := mongo.InsertProduttore(ctx, p); err != nil {
 			log.Warn("rifiuti seed produttore failed", zap.Error(err))
@@ -60,16 +60,16 @@ func SeedRifiuti(ctx context.Context, mongo *repository.MongoRepository, tenantI
 	// finché il design partner non condivide i propri).
 	if _, err := mongo.GetTrasportatore(ctx, tenantID, DemoTrasportatoreID); errors.Is(err, repository.ErrNotFound) {
 		t := &rifiuti.Trasportatore{
-			ID:                  DemoTrasportatoreID,
-			TenantID:            tenantID,
-			RagioneSociale:      "FRO S.r.l. — Demo",
-			CodiceFiscale:       "03728630231",
-			PartitaIVA:          "03728630231",
-			AlboCategoria:       rifiuti.AlboCat5,
-			AlboClasse:          rifiuti.AlboClasseE,
+			ID:                   DemoTrasportatoreID,
+			TenantID:             tenantID,
+			RagioneSociale:       "FRO S.r.l. — Demo",
+			CodiceFiscale:        "03728630231",
+			PartitaIVA:           "03728630231",
+			AlboCategoria:        rifiuti.AlboCat5,
+			AlboClasse:           rifiuti.AlboClasseE,
 			AlboNumeroIscrizione: "VE/000000",
-			AlboScadenza:        farFuture,
-			SedeLegale:          "Via Quartieri snc, 37060 Mozzecane (VR)",
+			AlboScadenza:         farFuture,
+			SedeLegale:           "Via Quartieri snc, 37060 Mozzecane (VR)",
 		}
 		if err := mongo.InsertTrasportatore(ctx, t); err != nil {
 			log.Warn("rifiuti seed trasportatore failed", zap.Error(err))

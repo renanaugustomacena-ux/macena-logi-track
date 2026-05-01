@@ -62,3 +62,4 @@ docker-compose.override.yml
 .fseventsd/
 .Spotlight-V100/
 .Trashes/
+.claude/

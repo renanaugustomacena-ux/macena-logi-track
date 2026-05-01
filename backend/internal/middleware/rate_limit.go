@@ -18,8 +18,8 @@ import (
 // working-set size; without this, an attacker rotating source IPs
 // drives the limiter map unbounded.
 const (
-	rateLimitEvictAfter     = 30 * time.Minute
-	rateLimitSweepInterval  = 5 * time.Minute
+	rateLimitEvictAfter    = 30 * time.Minute
+	rateLimitSweepInterval = 5 * time.Minute
 )
 
 // RouteOverride describes a per-route rate-limit override. Paths match

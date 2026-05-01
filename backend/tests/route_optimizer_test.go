@@ -130,9 +130,9 @@ func extractHost(raw string) string {
 // stdout-capturing in a separate test below).
 func TestRouteOptimizerTruckProfile(t *testing.T) {
 	cases := []struct {
-		name           string
-		truckProfile   string
-		expectedPath   string
+		name         string
+		truckProfile string
+		expectedPath string
 	}{
 		{name: "configured_truck_profile", truckProfile: "truck", expectedPath: "/route/v1/truck/"},
 		{name: "configured_hgv_profile", truckProfile: "hgv", expectedPath: "/route/v1/hgv/"},

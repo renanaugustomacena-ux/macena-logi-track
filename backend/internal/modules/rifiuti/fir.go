@@ -67,9 +67,9 @@ const (
 // state machine) that wine, freight forwarders, and other
 // verticals do not need.
 type FIR struct {
-	ID            string `bson:"_id,omitempty" json:"id"`
-	TenantID      string `bson:"tenant_id" json:"tenantId"`
-	ShipmentID    string `bson:"shipment_id" json:"shipmentId"`
+	ID         string `bson:"_id,omitempty" json:"id"`
+	TenantID   string `bson:"tenant_id" json:"tenantId"`
+	ShipmentID string `bson:"shipment_id" json:"shipmentId"`
 
 	// NumeroRENTRI is the unique identifier issued by RENTRI on
 	// vidimazione. Format is published in D.M. 59/2023 Allegato 2;
@@ -77,15 +77,15 @@ type FIR struct {
 	// RENTRI client at ingestion.
 	NumeroRENTRI string `bson:"numero_rentri,omitempty" json:"numeroRentri,omitempty"`
 
-	State          FIRState        `bson:"state" json:"state"`
-	ProduttoreID   string          `bson:"produttore_id" json:"produttoreId"`
-	TrasportatoreID string         `bson:"trasportatore_id" json:"trasportatoreId"`
-	DestinatarioID string          `bson:"destinatario_id" json:"destinatarioId"`
+	State           FIRState `bson:"state" json:"state"`
+	ProduttoreID    string   `bson:"produttore_id" json:"produttoreId"`
+	TrasportatoreID string   `bson:"trasportatore_id" json:"trasportatoreId"`
+	DestinatarioID  string   `bson:"destinatario_id" json:"destinatarioId"`
 
-	CER            CERCode         `bson:"cer" json:"cer"`
+	CER                CERCode     `bson:"cer" json:"cer"`
 	DescrizioneRifiuto string      `bson:"descrizione_rifiuto" json:"descrizioneRifiuto"`
-	StatoFisico    StatoFisico     `bson:"stato_fisico" json:"statoFisico"`
-	Caratteristiche []HPClass      `bson:"caratteristiche,omitempty" json:"caratteristiche,omitempty"`
+	StatoFisico        StatoFisico `bson:"stato_fisico" json:"statoFisico"`
+	Caratteristiche    []HPClass   `bson:"caratteristiche,omitempty" json:"caratteristiche,omitempty"`
 
 	// Quantita are kept in grams to avoid float drift on weight
 	// reconciliation between produttore-declared and
@@ -97,21 +97,21 @@ type FIR struct {
 	OperazioneDestino ImpiantoOperazione `bson:"operazione_destino" json:"operazioneDestino"`
 
 	// ADR fields — only populated when CER is pericoloso.
-	ADRClass    logistics.ADRClass `bson:"adr_class,omitempty" json:"adrClass,omitempty"`
-	NumeroONU   string             `bson:"numero_onu,omitempty" json:"numeroOnu,omitempty"`
-	GruppoImballaggio string       `bson:"gruppo_imballaggio,omitempty" json:"gruppoImballaggio,omitempty"`
+	ADRClass          logistics.ADRClass `bson:"adr_class,omitempty" json:"adrClass,omitempty"`
+	NumeroONU         string             `bson:"numero_onu,omitempty" json:"numeroOnu,omitempty"`
+	GruppoImballaggio string             `bson:"gruppo_imballaggio,omitempty" json:"gruppoImballaggio,omitempty"`
 
 	// Vidimazione + signatures.
-	VidimatoAt              time.Time `bson:"vidimato_at,omitempty" json:"vidimatoAt,omitempty"`
-	FirmaProduttoreAt       time.Time `bson:"firma_produttore_at,omitempty" json:"firmaProduttoreAt,omitempty"`
-	FirmaTrasportatoreAt    time.Time `bson:"firma_trasportatore_at,omitempty" json:"firmaTrasportatoreAt,omitempty"`
-	FirmaDestinatarioAt     time.Time `bson:"firma_destinatario_at,omitempty" json:"firmaDestinatarioAt,omitempty"`
+	VidimatoAt                time.Time `bson:"vidimato_at,omitempty" json:"vidimatoAt,omitempty"`
+	FirmaProduttoreAt         time.Time `bson:"firma_produttore_at,omitempty" json:"firmaProduttoreAt,omitempty"`
+	FirmaTrasportatoreAt      time.Time `bson:"firma_trasportatore_at,omitempty" json:"firmaTrasportatoreAt,omitempty"`
+	FirmaDestinatarioAt       time.Time `bson:"firma_destinatario_at,omitempty" json:"firmaDestinatarioAt,omitempty"`
 	CopiaProduttoreReturnedAt time.Time `bson:"copia_produttore_returned_at,omitempty" json:"copiaProduttoreReturnedAt,omitempty"`
 
 	// MotivazioneAnnullamento / MotivazioneRespingimento are free
 	// text required by RENTRI when the FIR enters one of those
 	// terminal states.
-	MotivazioneAnnullamento string `bson:"motivazione_annullamento,omitempty" json:"motivazioneAnnullamento,omitempty"`
+	MotivazioneAnnullamento  string `bson:"motivazione_annullamento,omitempty" json:"motivazioneAnnullamento,omitempty"`
 	MotivazioneRespingimento string `bson:"motivazione_respingimento,omitempty" json:"motivazioneRespingimento,omitempty"`
 
 	CreatedAt time.Time `bson:"created_at" json:"createdAt"`
@@ -124,12 +124,12 @@ type FIR struct {
 type StatoFisico string
 
 const (
-	StatoFisicoSolidoPolverulento  StatoFisico = "solido_polverulento"
+	StatoFisicoSolidoPolverulento    StatoFisico = "solido_polverulento"
 	StatoFisicoSolidoNonPolverulento StatoFisico = "solido_non_polverulento"
-	StatoFisicoFangosoPalabile     StatoFisico = "fangoso_palabile"
-	StatoFisicoLiquido             StatoFisico = "liquido"
-	StatoFisicoAeriforme           StatoFisico = "aeriforme"
-	StatoFisicoVischiosoSciropposo StatoFisico = "vischioso_sciropposo"
+	StatoFisicoFangosoPalabile       StatoFisico = "fangoso_palabile"
+	StatoFisicoLiquido               StatoFisico = "liquido"
+	StatoFisicoAeriforme             StatoFisico = "aeriforme"
+	StatoFisicoVischiosoSciropposo   StatoFisico = "vischioso_sciropposo"
 )
 
 // HPClass enumerates the hazard properties HP1..HP15 from
@@ -158,14 +158,14 @@ const (
 // FIR error sentinels. Kept as exported variables so the HTTP layer
 // can map each to a stable RFC 7807 problem type.
 var (
-	ErrFIRMissingProduttore     = errors.New("FIR missing produttore reference")
-	ErrFIRMissingTrasportatore  = errors.New("FIR missing trasportatore reference")
-	ErrFIRMissingDestinatario   = errors.New("FIR missing destinatario reference")
-	ErrFIRMissingCER            = errors.New("FIR missing CER code")
-	ErrFIRInvalidQuantita       = errors.New("FIR quantita must be positive")
-	ErrFIRMissingOperazione     = errors.New("FIR missing operazione destino")
-	ErrFIRPericolosoMissingADR  = errors.New("rifiuto pericoloso requires ADR class + numero ONU")
-	ErrFIRPericolosoMissingHP   = errors.New("rifiuto pericoloso requires at least one HP class")
+	ErrFIRMissingProduttore      = errors.New("FIR missing produttore reference")
+	ErrFIRMissingTrasportatore   = errors.New("FIR missing trasportatore reference")
+	ErrFIRMissingDestinatario    = errors.New("FIR missing destinatario reference")
+	ErrFIRMissingCER             = errors.New("FIR missing CER code")
+	ErrFIRInvalidQuantita        = errors.New("FIR quantita must be positive")
+	ErrFIRMissingOperazione      = errors.New("FIR missing operazione destino")
+	ErrFIRPericolosoMissingADR   = errors.New("rifiuto pericoloso requires ADR class + numero ONU")
+	ErrFIRPericolosoMissingHP    = errors.New("rifiuto pericoloso requires at least one HP class")
 	ErrFIRInvalidStateTransition = errors.New("invalid FIR state transition")
 	ErrFIRCopiaProduttoreOverdue = errors.New("FIR copia produttore overdue (>90 days)")
 )

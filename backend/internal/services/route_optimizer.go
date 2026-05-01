@@ -32,8 +32,8 @@ type RouteOptimizer interface {
 // "truck", "van" or "car"; AvoidTolls requests the alternate profile.
 type RouteRequest struct {
 	Waypoints  []logistics.GeoPoint `json:"waypoints"`
-	Vehicle    string            `json:"vehicle"`
-	AvoidTolls bool              `json:"avoidTolls"`
+	Vehicle    string               `json:"vehicle"`
+	AvoidTolls bool                 `json:"avoidTolls"`
 }
 
 // RouteResponse is the normalised result returned to callers. The

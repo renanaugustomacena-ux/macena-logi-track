@@ -12,8 +12,8 @@ import (
 // 59/2023. The payload is the canonical xFIR body minus the
 // vidimazione fields RENTRI fills in on accept.
 type VidimazioneRequest struct {
-	TenantID     string
-	XFIRPayload  []byte // canonical XML conforming to rentri-formulario-1.0.xsd
+	TenantID       string
+	XFIRPayload    []byte // canonical XML conforming to rentri-formulario-1.0.xsd
 	IdempotencyKey string // stable per logical FIR; RENTRI 4xx on retry without it
 }
 
@@ -22,10 +22,10 @@ type VidimazioneRequest struct {
 // identifier of the FIR; QRCodePayload is the URL the QR encodes
 // (for verification by inspectors with a phone camera).
 type VidimazioneResponse struct {
-	NumeroRENTRI   string
-	VidimatoAt     time.Time
-	QRCodePayload  string
-	XFIRSignedXML  []byte // server-signed XAdES envelope
+	NumeroRENTRI  string
+	VidimatoAt    time.Time
+	QRCodePayload string
+	XFIRSignedXML []byte // server-signed XAdES envelope
 }
 
 // MovimentoRequest is the per-movement record sent to RENTRI to
@@ -51,14 +51,14 @@ type MovimentoResponse struct {
 // or list call. The full canonical XML is fetched on demand via
 // GetFIRXML when an inspector or the producer requests it.
 type FIRSummary struct {
-	NumeroRENTRI string
-	VidimatoAt   time.Time
-	State        string // RENTRI's state vocabulary, mirrors but does not equal FIRState
-	ProduttoreCF string
+	NumeroRENTRI    string
+	VidimatoAt      time.Time
+	State           string // RENTRI's state vocabulary, mirrors but does not equal FIRState
+	ProduttoreCF    string
 	TrasportatoreCF string
 	DestinatarioCF  string
-	CER          string
-	QuantitaKg   float64
+	CER             string
+	QuantitaKg      float64
 }
 
 // Client is the interface every RENTRI integration must implement.

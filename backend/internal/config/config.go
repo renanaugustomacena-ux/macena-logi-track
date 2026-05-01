@@ -37,10 +37,10 @@ type Config struct {
 
 // AppConfig covers the top-level lifecycle concerns.
 type AppConfig struct {
-	Env       string `envconfig:"APP_ENV" default:"development"`
-	Name      string `envconfig:"APP_NAME" default:"logitrack"`
-	Version   string `envconfig:"APP_VERSION" default:"0.1.0"`
-	LogLevel  string `envconfig:"LOG_LEVEL" default:"info"`
+	Env      string `envconfig:"APP_ENV" default:"development"`
+	Name     string `envconfig:"APP_NAME" default:"logitrack"`
+	Version  string `envconfig:"APP_VERSION" default:"0.1.0"`
+	LogLevel string `envconfig:"LOG_LEVEL" default:"info"`
 	// AuditMode is "async" (default, lossy under burst) or "sync"
 	// (guaranteed retention, ~1-3 ms per mutation). Customers with a
 	// "no audit drop" DPA clause set this to "sync" in their fork.

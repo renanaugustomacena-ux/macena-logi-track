@@ -28,12 +28,12 @@
 //     the MASE Direzione Generale Economia Circolare and referenced
 //     in art. 8 D.M. 59/2023:
 //
-//       rentri-formulario-1.0.xsd   (master)
-//       rentri-common-1.0.xsd
-//       rentri-enum-1.0.xsd
-//       rentri-registri-1.0.xsd
-//       rentri-movimenti-1.0.xsd
-//       xmldsig-core-schema.xsd     (W3C XML Signature)
+//     rentri-formulario-1.0.xsd   (master)
+//     rentri-common-1.0.xsd
+//     rentri-enum-1.0.xsd
+//     rentri-registri-1.0.xsd
+//     rentri-movimenti-1.0.xsd
+//     xmldsig-core-schema.xsd     (W3C XML Signature)
 //
 //     The Go structs in this package are the encoding-friendly mirror
 //     of those schemas. Server-side validation against the canonical
