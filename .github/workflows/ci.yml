@@ -119,7 +119,7 @@ jobs:
             --tag "$IMAGE_REF_TAG" \
             ./backend
       - name: Trivy scan (fail on HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: logitrack/backend:${{ github.sha }}
           format: sarif
