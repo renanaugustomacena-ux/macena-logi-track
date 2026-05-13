@@ -116,6 +116,12 @@ func (r *MongoRepository) EnsureIndexes(ctx context.Context) error {
 	if err := r.EnsureRifiutiIndexes(ctx); err != nil {
 		return fmt.Errorf("rifiuti indexes: %w", err)
 	}
+	if err := r.EnsureITOpsIndexes(ctx); err != nil {
+		return fmt.Errorf("itops indexes: %w", err)
+	}
+	if err := r.EnsureFleetITIndexes(ctx); err != nil {
+		return fmt.Errorf("fleet_it indexes: %w", err)
+	}
 	r.log.Info("mongo indexes ensured", zap.String("database", r.db.Name()))
 	return nil
 }

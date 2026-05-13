@@ -111,6 +111,10 @@ func run() error {
 		zap.String("env", cfg.App.Env),
 		zap.String("version", cfg.App.Version),
 		zap.Int("port", cfg.HTTP.Port),
+		zap.Bool("mod_logistics", cfg.Modules.Logistics),
+		zap.Bool("mod_rifiuti", cfg.Modules.Rifiuti),
+		zap.Bool("mod_itops", cfg.Modules.ITOps),
+		zap.Bool("mod_fleet_it", cfg.Modules.FleetIT),
 	)
 
 	// Wire the structured logger into the problem package so every 500
@@ -178,8 +182,10 @@ func run() error {
 			if err := demo.Seed(rootCtx, mongoRepo, shipmentSvc, routeSvc, cfg.Demo.TenantID, log); err != nil {
 				log.Warn("demo seed skipped", zap.Error(err))
 			}
-			if err := demo.SeedRifiuti(rootCtx, mongoRepo, cfg.Demo.TenantID, log); err != nil {
-				log.Warn("rifiuti demo seed skipped", zap.Error(err))
+			if cfg.Modules.Rifiuti {
+				if err := demo.SeedRifiuti(rootCtx, mongoRepo, cfg.Demo.TenantID, log); err != nil {
+					log.Warn("rifiuti demo seed skipped", zap.Error(err))
+				}
 			}
 			seedDone.Store(true)
 		}()
@@ -209,9 +215,17 @@ func run() error {
 		Stream:  handlers.NewStreamHandler(hub, log, cfg.JWT, cfg.WebSocket),
 		ETA:     handlers.NewETAHandler(etaSvc),
 		Fleet:   handlers.NewFleetHandler(mongoRepo),
-		Rifiuto: handlers.NewRifiutoHandler(mongoRepo, rentri.NewQueuedStub()),
 		Auth:    handlers.NewAuthHandler(cfg.JWT, identityStore, redisRepo),
 		Audit:   auditWriter,
+	}
+	if cfg.Modules.Rifiuti {
+		deps.Rifiuto = handlers.NewRifiutoHandler(mongoRepo, rentri.NewQueuedStub())
+	}
+	if cfg.Modules.ITOps {
+		deps.ITOps = handlers.NewITOpsHandler(mongoRepo)
+	}
+	if cfg.Modules.FleetIT {
+		deps.FleetIT = handlers.NewFleetITHandler(mongoRepo)
 	}
 
 	if cfg.IsProduction() {

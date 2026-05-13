@@ -59,7 +59,7 @@ func (h *WebSocketHub) Register(s *Subscriber) func() {
 	}
 }
 
-// Broadcast pushes an event to every matching subscriber.
+// Broadcast pushes a tracking event to every matching subscriber.
 func (h *WebSocketHub) Broadcast(evt logistics.TrackingEvent) {
 	payload, err := json.Marshal(evt)
 	if err != nil {
@@ -78,8 +78,33 @@ func (h *WebSocketHub) Broadcast(evt logistics.TrackingEvent) {
 		select {
 		case sub.Outbound <- payload:
 		default:
-			// Slow consumer — drop the message rather than block the
-			// fan-out loop. The client will resync on next reconnect.
+			h.log.Warn("ws slow consumer drop", zap.String("subscriber", sub.ID))
+		}
+	}
+}
+
+// BroadcastJSON pushes an arbitrary JSON envelope to all subscribers
+// in the given tenant. Used for non-tracking events (monitoring alerts,
+// incident updates, automation completions).
+func (h *WebSocketHub) BroadcastJSON(tenantID, eventType string, data any) {
+	envelope := map[string]any{
+		"type": eventType,
+		"data": data,
+	}
+	payload, err := json.Marshal(envelope)
+	if err != nil {
+		h.log.Warn("ws marshal generic event failed", zap.Error(err))
+		return
+	}
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for _, sub := range h.subscribers {
+		if sub.TenantID != "" && sub.TenantID != tenantID {
+			continue
+		}
+		select {
+		case sub.Outbound <- payload:
+		default:
 			h.log.Warn("ws slow consumer drop", zap.String("subscriber", sub.ID))
 		}
 	}

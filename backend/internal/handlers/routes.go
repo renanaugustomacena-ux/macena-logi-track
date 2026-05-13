@@ -11,20 +11,22 @@ import (
 
 // Dependencies bundles the singletons a route-setup call needs.
 type Dependencies struct {
-	Config  *config.Config
-	Logger  *zap.Logger
-	Health  *HealthHandler
-	Ready   *ReadyHandler
-	Metrics *MetricsHandler
-	Ship    *ShipmentHandler
-	Track   *TrackingHandler
-	Route   *RouteHandler
-	Stream  *StreamHandler
-	ETA     *ETAHandler
-	Fleet   *FleetHandler
-	Rifiuto *RifiutoHandler
-	Auth    *AuthHandler
-	Audit   *audit.Writer
+	Config   *config.Config
+	Logger   *zap.Logger
+	Health   *HealthHandler
+	Ready    *ReadyHandler
+	Metrics  *MetricsHandler
+	Ship     *ShipmentHandler
+	Track    *TrackingHandler
+	Route    *RouteHandler
+	Stream   *StreamHandler
+	ETA      *ETAHandler
+	Fleet    *FleetHandler
+	Rifiuto  *RifiutoHandler
+	ITOps    *ITOpsHandler
+	FleetIT  *FleetITHandler
+	Auth     *AuthHandler
+	Audit    *audit.Writer
 }
 
 // Register wires every route onto the provided engine. Routes are
@@ -91,41 +93,46 @@ func Register(r *gin.Engine, deps Dependencies) {
 	mutate := middleware.RequireRole("operator", "admin")
 	adminOnly := middleware.RequireRole("admin")
 	{
-		shipments := v1.Group("/shipments")
-		{
-			shipments.POST("", mutate, deps.Ship.Create)
-			shipments.GET("", deps.Ship.List)
-			shipments.GET("/:id", deps.Ship.Get)
-			shipments.POST("/:id/waypoints", mutate, deps.Ship.AddWaypoint)
-			shipments.GET("/:id/trace", deps.Ship.Trace)
-			shipments.GET("/:id/position", deps.Track.LatestPosition)
-			shipments.GET("/:id/eta", deps.ETA.Get)
-		}
-		routes := v1.Group("/routes")
-		{
-			routes.POST("/optimize", mutate, deps.Route.Optimize)
-		}
-		if deps.Fleet != nil {
-			vehicles := v1.Group("/vehicles")
+		// Logistics module — shipments, routes, fleet
+		if deps.Config.Modules.Logistics {
+			shipments := v1.Group("/shipments")
 			{
-				vehicles.POST("", mutate, deps.Fleet.CreateVehicle)
-				vehicles.GET("", deps.Fleet.ListVehicles)
-				vehicles.GET("/:id", deps.Fleet.GetVehicle)
+				shipments.POST("", mutate, deps.Ship.Create)
+				shipments.GET("", deps.Ship.List)
+				shipments.GET("/:id", deps.Ship.Get)
+				shipments.POST("/:id/waypoints", mutate, deps.Ship.AddWaypoint)
+				shipments.GET("/:id/trace", deps.Ship.Trace)
+				shipments.GET("/:id/position", deps.Track.LatestPosition)
+				shipments.GET("/:id/eta", deps.ETA.Get)
 			}
-			drivers := v1.Group("/drivers")
+			routes := v1.Group("/routes")
 			{
-				drivers.POST("", mutate, deps.Fleet.CreateDriver)
-				drivers.GET("", deps.Fleet.ListDrivers)
-				drivers.GET("/:id", deps.Fleet.GetDriver)
+				routes.POST("/optimize", mutate, deps.Route.Optimize)
 			}
-			geofences := v1.Group("/geofences")
-			{
-				geofences.POST("", mutate, deps.Fleet.CreateGeofence)
-				geofences.GET("", deps.Fleet.ListGeofences)
-				geofences.GET("/:id", deps.Fleet.GetGeofence)
+			if deps.Fleet != nil {
+				vehicles := v1.Group("/vehicles")
+				{
+					vehicles.POST("", mutate, deps.Fleet.CreateVehicle)
+					vehicles.GET("", deps.Fleet.ListVehicles)
+					vehicles.GET("/:id", deps.Fleet.GetVehicle)
+				}
+				drivers := v1.Group("/drivers")
+				{
+					drivers.POST("", mutate, deps.Fleet.CreateDriver)
+					drivers.GET("", deps.Fleet.ListDrivers)
+					drivers.GET("/:id", deps.Fleet.GetDriver)
+				}
+				geofences := v1.Group("/geofences")
+				{
+					geofences.POST("", mutate, deps.Fleet.CreateGeofence)
+					geofences.GET("", deps.Fleet.ListGeofences)
+					geofences.GET("/:id", deps.Fleet.GetGeofence)
+				}
 			}
 		}
-		if deps.Rifiuto != nil {
+
+		// Rifiuti module — waste transport (FIR, RENTRI)
+		if deps.Config.Modules.Rifiuti && deps.Rifiuto != nil {
 			rif := v1.Group("/rifiuti")
 			{
 				rif.POST("/produttori", mutate, deps.Rifiuto.CreateProduttore)
@@ -143,5 +150,76 @@ func Register(r *gin.Engine, deps Dependencies) {
 				rif.GET("/cer/:code", deps.Rifiuto.CERCheck)
 			}
 		}
+
+		// ITOps module — IT asset management, incidents, monitoring
+		if deps.Config.Modules.ITOps && deps.ITOps != nil {
+			assets := v1.Group("/assets")
+			{
+				assets.POST("", mutate, deps.ITOps.CreateAsset)
+				assets.GET("", deps.ITOps.ListAssets)
+				assets.GET("/stats", deps.ITOps.AssetStats)
+				assets.GET("/:id", deps.ITOps.GetAsset)
+				assets.PUT("/:id", mutate, deps.ITOps.UpdateAsset)
+			}
+			incidents := v1.Group("/incidents")
+			{
+				incidents.POST("", mutate, deps.ITOps.CreateIncident)
+				incidents.GET("", deps.ITOps.ListIncidents)
+				incidents.GET("/stats", deps.ITOps.IncidentStats)
+				incidents.GET("/:id", deps.ITOps.GetIncident)
+				incidents.POST("/:id/transition", mutate, deps.ITOps.TransitionIncident)
+				incidents.POST("/:id/worklog", mutate, deps.ITOps.AddWorkLog)
+			}
+			monitoring := v1.Group("/monitoring")
+			{
+				monitoring.GET("/alerts", deps.ITOps.ListAlerts)
+				monitoring.GET("/alerts/stats", deps.ITOps.AlertStats)
+				monitoring.POST("/alerts", mutate, deps.ITOps.IngestAlert)
+				monitoring.POST("/alerts/:id/ack", mutate, deps.ITOps.AckAlert)
+				monitoring.POST("/alerts/:id/resolve", mutate, deps.ITOps.ResolveAlert)
+				monitoring.GET("/checks", deps.ITOps.ListChecks)
+				monitoring.POST("/checks", mutate, deps.ITOps.UpsertCheck)
+			}
+			runbooks := v1.Group("/runbooks")
+			{
+				runbooks.POST("", mutate, deps.ITOps.CreateRunbook)
+				runbooks.GET("", deps.ITOps.ListRunbooks)
+				runbooks.GET("/:id", deps.ITOps.GetRunbook)
+				runbooks.PUT("/:id", mutate, deps.ITOps.UpdateRunbook)
+			}
+			licenses := v1.Group("/licenses")
+			{
+				licenses.POST("", mutate, deps.ITOps.CreateLicense)
+				licenses.GET("", deps.ITOps.ListLicenses)
+				licenses.GET("/compliance", deps.ITOps.LicenseCompliance)
+				licenses.GET("/:id", deps.ITOps.GetLicense)
+				licenses.PUT("/:id", mutate, deps.ITOps.UpdateLicense)
+			}
+			dashboard := v1.Group("/dashboard")
+			{
+				dashboard.GET("/overview", deps.ITOps.DashboardOverview)
+				dashboard.GET("/scadenze", deps.ITOps.DashboardScadenze)
+			}
+		}
+
+		// Fleet-IT module — driver devices, telematics units
+		if deps.Config.Modules.FleetIT && deps.FleetIT != nil {
+			devices := v1.Group("/fleet/devices")
+			{
+				devices.POST("", mutate, deps.FleetIT.CreateDevice)
+				devices.GET("", deps.FleetIT.ListDevices)
+				devices.GET("/:id", deps.FleetIT.GetDevice)
+				devices.PUT("/:id", mutate, deps.FleetIT.UpdateDevice)
+			}
+			telematics := v1.Group("/fleet/telematics")
+			{
+				telematics.POST("", mutate, deps.FleetIT.CreateTelematicsUnit)
+				telematics.GET("", deps.FleetIT.ListTelematicsUnits)
+				telematics.GET("/:id", deps.FleetIT.GetTelematicsUnit)
+				telematics.PUT("/:id", mutate, deps.FleetIT.UpdateTelematicsUnit)
+			}
+		}
+
+		_ = adminOnly // used conditionally above
 	}
 }

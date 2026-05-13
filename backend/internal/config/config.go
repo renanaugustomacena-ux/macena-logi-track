@@ -33,6 +33,7 @@ type Config struct {
 	RateLimit RateLimitConfig
 	WebSocket WebSocketConfig
 	Demo      DemoConfig
+	Modules   ModulesConfig
 }
 
 // AppConfig covers the top-level lifecycle concerns.
@@ -161,6 +162,17 @@ type WebSocketConfig struct {
 type DemoConfig struct {
 	SeedOnBoot bool   `envconfig:"SEED_DEMO" default:"false"`
 	TenantID   string `envconfig:"SEED_DEMO_TENANT" default:"demo-tenant"`
+}
+
+// ModulesConfig selects which vertical modules are active. Each module
+// is a self-contained feature set with its own routes, repository
+// collections, and domain types. Disabled modules register no routes
+// and consume no resources.
+type ModulesConfig struct {
+	Logistics bool `envconfig:"MODULE_LOGISTICS" default:"true"`
+	Rifiuti   bool `envconfig:"MODULE_RIFIUTI" default:"true"`
+	ITOps     bool `envconfig:"MODULE_ITOPS" default:"false"`
+	FleetIT   bool `envconfig:"MODULE_FLEET_IT" default:"false"`
 }
 
 // Load reads configuration from the environment, optionally pre-loading
