@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -63,8 +62,7 @@ func (h *FleetITHandler) GetDevice(c *gin.Context) {
 
 func (h *FleetITHandler) ListDevices(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	items, err := h.repo.ListDriverDevices(c.Request.Context(), claims.TenantID, c.Query("driver_id"), c.Query("status"), limit, offset)
 	if err != nil {
 		problem.Internal(c, "list_failed", err.Error())
@@ -84,10 +82,13 @@ func (h *FleetITHandler) UpdateDevice(c *gin.Context) {
 		problem.Internal(c, "lookup_failed", err.Error())
 		return
 	}
+	origID, origCreated := existing.ID, existing.CreatedAt
 	if err := c.ShouldBindJSON(existing); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
 	}
+	existing.ID = origID
+	existing.CreatedAt = origCreated
 	existing.TenantID = claims.TenantID
 	if err := existing.Validate(); err != nil {
 		problem.Unprocessable(c, "validation_failed", err.Error())
@@ -140,8 +141,7 @@ func (h *FleetITHandler) GetTelematicsUnit(c *gin.Context) {
 
 func (h *FleetITHandler) ListTelematicsUnits(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	items, err := h.repo.ListTelematicsUnits(c.Request.Context(), claims.TenantID, c.Query("vehicle_id"), limit, offset)
 	if err != nil {
 		problem.Internal(c, "list_failed", err.Error())
@@ -161,10 +161,13 @@ func (h *FleetITHandler) UpdateTelematicsUnit(c *gin.Context) {
 		problem.Internal(c, "lookup_failed", err.Error())
 		return
 	}
+	origID, origCreated := existing.ID, existing.CreatedAt
 	if err := c.ShouldBindJSON(existing); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
 	}
+	existing.ID = origID
+	existing.CreatedAt = origCreated
 	existing.TenantID = claims.TenantID
 	if err := existing.Validate(); err != nil {
 		problem.Unprocessable(c, "validation_failed", err.Error())

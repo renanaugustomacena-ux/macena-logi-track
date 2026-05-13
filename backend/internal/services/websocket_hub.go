@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
@@ -123,7 +124,7 @@ func (h *WebSocketHub) Run(ctx context.Context) error {
 			return ctx.Err()
 		case msg, ok := <-ch:
 			if !ok {
-				return nil
+				return fmt.Errorf("redis pub/sub channel closed unexpectedly")
 			}
 			var evt logistics.TrackingEvent
 			if err := json.Unmarshal([]byte(msg.Payload), &evt); err != nil {

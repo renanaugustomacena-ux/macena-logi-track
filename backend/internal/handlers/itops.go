@@ -16,6 +16,23 @@ import (
 	"github.com/logitrack/backend/internal/repository"
 )
 
+const maxPageSize = 500
+
+func clampPage(limitStr, offsetStr string) (int, int) {
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 100
+	}
+	if limit > maxPageSize {
+		limit = maxPageSize
+	}
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
 // ITOpsHandler groups the IT asset, incident, and monitoring endpoints.
 type ITOpsHandler struct {
 	repo *repository.MongoRepository
@@ -63,8 +80,7 @@ func (h *ITOpsHandler) GetAsset(c *gin.Context) {
 
 func (h *ITOpsHandler) ListAssets(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	f := repository.AssetFilter{
 		TenantID: claims.TenantID,
 		Kind:     c.Query("kind"),
@@ -92,10 +108,13 @@ func (h *ITOpsHandler) UpdateAsset(c *gin.Context) {
 		problem.Internal(c, "lookup_failed", err.Error())
 		return
 	}
+	origID, origCreated := existing.ID, existing.CreatedAt
 	if err := c.ShouldBindJSON(existing); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
 	}
+	existing.ID = origID
+	existing.CreatedAt = origCreated
 	existing.TenantID = claims.TenantID
 	if err := existing.Validate(); err != nil {
 		problem.Unprocessable(c, "validation_failed", err.Error())
@@ -139,13 +158,16 @@ func (h *ITOpsHandler) CreateIncident(c *gin.Context) {
 		problem.Unprocessable(c, "validation_failed", err.Error())
 		return
 	}
+	if inc.Reference == "" {
+		id := inc.ID
+		if id == "" {
+			id = fmt.Sprintf("%08x", now.UnixNano())
+		}
+		inc.Reference = fmt.Sprintf("INC-%d-%s", now.Year(), id[:8])
+	}
 	if err := h.repo.InsertIncident(c.Request.Context(), &inc); err != nil {
 		problem.Internal(c, "create_failed", err.Error())
 		return
-	}
-	if inc.Reference == "" {
-		inc.Reference = fmt.Sprintf("INC-%d-%s", now.Year(), inc.ID[:8])
-		_ = h.repo.UpdateIncident(c.Request.Context(), &inc)
 	}
 	c.JSON(http.StatusCreated, inc)
 }
@@ -166,8 +188,7 @@ func (h *ITOpsHandler) GetIncident(c *gin.Context) {
 
 func (h *ITOpsHandler) ListIncidents(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	f := repository.IncidentFilter{
 		TenantID: claims.TenantID,
 		Status:   c.Query("status"),
@@ -285,8 +306,7 @@ func (h *ITOpsHandler) IncidentStats(c *gin.Context) {
 
 func (h *ITOpsHandler) ListAlerts(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	items, err := h.repo.ListMonitoringAlerts(c.Request.Context(), claims.TenantID, c.Query("status"), limit, offset)
 	if err != nil {
 		problem.Internal(c, "list_failed", err.Error())
@@ -303,15 +323,15 @@ func (h *ITOpsHandler) IngestAlert(c *gin.Context) {
 		return
 	}
 	a.TenantID = claims.TenantID
-	if a.Title == "" {
-		problem.Unprocessable(c, "missing_title", "alert title is required")
-		return
-	}
 	if a.OccurredAt.IsZero() {
 		a.OccurredAt = time.Now().UTC()
 	}
 	if a.Status == "" {
 		a.Status = itops.AlertOpen
+	}
+	if err := a.Validate(); err != nil {
+		problem.Unprocessable(c, "validation_failed", err.Error())
+		return
 	}
 	if err := h.repo.InsertMonitoringAlert(c.Request.Context(), &a); err != nil {
 		problem.Internal(c, "create_failed", err.Error())
@@ -384,15 +404,15 @@ func (h *ITOpsHandler) UpsertCheck(c *gin.Context) {
 		return
 	}
 	chk.TenantID = claims.TenantID
-	if chk.CheckName == "" || chk.AssetID == "" {
-		problem.Unprocessable(c, "missing_fields", "check_name and asset_id are required")
-		return
-	}
 	if chk.LastChecked.IsZero() {
 		chk.LastChecked = time.Now().UTC()
 	}
 	if chk.Status == "" {
 		chk.Status = itops.CheckUnknown
+	}
+	if err := chk.Validate(); err != nil {
+		problem.Unprocessable(c, "validation_failed", err.Error())
+		return
 	}
 	if err := h.repo.UpsertMonitoringCheck(c.Request.Context(), &chk); err != nil {
 		problem.Internal(c, "upsert_failed", err.Error())
@@ -448,8 +468,7 @@ func (h *ITOpsHandler) GetLicense(c *gin.Context) {
 
 func (h *ITOpsHandler) ListLicenses(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	items, total, err := h.repo.ListLicenses(c.Request.Context(), repository.LicenseFilter{
 		TenantID: claims.TenantID,
 		Limit:    limit,
@@ -473,10 +492,13 @@ func (h *ITOpsHandler) UpdateLicense(c *gin.Context) {
 		problem.Internal(c, "lookup_failed", err.Error())
 		return
 	}
+	origID, origCreated := existing.ID, existing.CreatedAt
 	if err := c.ShouldBindJSON(existing); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
 	}
+	existing.ID = origID
+	existing.CreatedAt = origCreated
 	existing.TenantID = claims.TenantID
 	if err := existing.Validate(); err != nil {
 		problem.Unprocessable(c, "validation_failed", err.Error())
@@ -540,8 +562,7 @@ func (h *ITOpsHandler) GetRunbook(c *gin.Context) {
 
 func (h *ITOpsHandler) ListRunbooks(c *gin.Context) {
 	claims := middleware.MustClaims(c)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, offset := clampPage(c.DefaultQuery("limit", "100"), c.DefaultQuery("offset", "0"))
 	items, total, err := h.repo.ListRunbooks(c.Request.Context(), repository.RunbookFilter{
 		TenantID: claims.TenantID,
 		Category: c.Query("category"),
@@ -567,10 +588,13 @@ func (h *ITOpsHandler) UpdateRunbook(c *gin.Context) {
 		problem.Internal(c, "lookup_failed", err.Error())
 		return
 	}
+	origID, origCreated := existing.ID, existing.CreatedAt
 	if err := c.ShouldBindJSON(existing); err != nil {
 		problem.BadRequest(c, "invalid_body", err.Error())
 		return
 	}
+	existing.ID = origID
+	existing.CreatedAt = origCreated
 	existing.TenantID = claims.TenantID
 	existing.Version++
 	if err := existing.Validate(); err != nil {

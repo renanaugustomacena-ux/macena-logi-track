@@ -37,7 +37,7 @@ type License struct {
 	Software     string      `bson:"software" json:"software"`
 	Vendor       string      `bson:"vendor" json:"vendor"`
 	LicenseType  LicenseType `bson:"license_type" json:"licenseType"`
-	LicenseKey   string      `bson:"license_key,omitempty" json:"licenseKey,omitempty"`
+	LicenseKey   string      `bson:"license_key,omitempty" json:"-"`
 	Seats        int         `bson:"seats" json:"seats"`
 	SeatsUsed    int         `bson:"seats_used" json:"seatsUsed"`
 	PurchaseDate *time.Time  `bson:"purchase_date,omitempty" json:"purchaseDate,omitempty"`

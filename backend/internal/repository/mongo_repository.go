@@ -82,8 +82,9 @@ func (r *MongoRepository) Disconnect(ctx context.Context) error {
 }
 
 // EnsureIndexes creates the indexes required for performant queries.
-// Idempotent — safe to invoke on every boot.
-func (r *MongoRepository) EnsureIndexes(ctx context.Context) error {
+// Idempotent — safe to invoke on every boot. Module indexes are only
+// created when the corresponding module is enabled in cfg.
+func (r *MongoRepository) EnsureIndexes(ctx context.Context, modules config.ModulesConfig) error {
 	shipmentIdx := []mongo.IndexModel{
 		{Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "reference", Value: 1}},
 			Options: options.Index().SetUnique(true).SetName("tenant_reference_uniq")},
@@ -113,14 +114,20 @@ func (r *MongoRepository) EnsureIndexes(ctx context.Context) error {
 	if _, err := r.db.Collection(CollectionCustody).Indexes().CreateMany(ctx, custodyIdx); err != nil {
 		return fmt.Errorf("custody indexes: %w", err)
 	}
-	if err := r.EnsureRifiutiIndexes(ctx); err != nil {
-		return fmt.Errorf("rifiuti indexes: %w", err)
+	if modules.Rifiuti {
+		if err := r.EnsureRifiutiIndexes(ctx); err != nil {
+			return fmt.Errorf("rifiuti indexes: %w", err)
+		}
 	}
-	if err := r.EnsureITOpsIndexes(ctx); err != nil {
-		return fmt.Errorf("itops indexes: %w", err)
+	if modules.ITOps {
+		if err := r.EnsureITOpsIndexes(ctx); err != nil {
+			return fmt.Errorf("itops indexes: %w", err)
+		}
 	}
-	if err := r.EnsureFleetITIndexes(ctx); err != nil {
-		return fmt.Errorf("fleet_it indexes: %w", err)
+	if modules.FleetIT {
+		if err := r.EnsureFleetITIndexes(ctx); err != nil {
+			return fmt.Errorf("fleet_it indexes: %w", err)
+		}
 	}
 	r.log.Info("mongo indexes ensured", zap.String("database", r.db.Name()))
 	return nil

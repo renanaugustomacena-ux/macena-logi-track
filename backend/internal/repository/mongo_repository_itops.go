@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/logitrack/backend/internal/modules/itops"
 )
+
+const maxSearchLen = 200
 
 const (
 	CollectionITAssets     = "it_assets"
@@ -132,7 +135,11 @@ func (r *MongoRepository) ListITAssets(ctx context.Context, f AssetFilter) ([]it
 		filter["status"] = f.Status
 	}
 	if f.Search != "" {
-		filter["name"] = bson.M{"$regex": f.Search, "$options": "i"}
+		s := f.Search
+		if len(s) > maxSearchLen {
+			s = s[:maxSearchLen]
+		}
+		filter["name"] = bson.M{"$regex": regexp.QuoteMeta(s), "$options": "i"}
 	}
 
 	total, err := r.db.Collection(CollectionITAssets).CountDocuments(ctx, filter)
@@ -193,6 +200,9 @@ func (r *MongoRepository) CountITAssetsByKind(ctx context.Context, tenantID stri
 			return nil, err
 		}
 		result[row.Kind] = row.Count
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
@@ -305,6 +315,9 @@ func (r *MongoRepository) CountIncidentsByStatus(ctx context.Context, tenantID s
 		}
 		result[row.Status] = row.Count
 	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -332,6 +345,9 @@ func (r *MongoRepository) CountIncidentsByPriority(ctx context.Context, tenantID
 			return nil, err
 		}
 		result[row.Priority] = row.Count
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
@@ -420,6 +436,9 @@ func (r *MongoRepository) CountAlertsByStatus(ctx context.Context, tenantID stri
 		}
 		result[row.Status] = row.Count
 	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -451,11 +470,26 @@ func (r *MongoRepository) UpsertMonitoringCheck(ctx context.Context, c *itops.Mo
 		c.ID = uuid.NewString()
 	}
 	now := time.Now().UTC()
-	if c.CreatedAt.IsZero() {
-		c.CreatedAt = now
-	}
 	filter := bson.M{"tenant_id": c.TenantID, "asset_id": c.AssetID, "check_name": c.CheckName}
-	update := bson.M{"$set": c}
+	update := bson.M{
+		"$setOnInsert": bson.M{
+			"_id":        c.ID,
+			"tenant_id":  c.TenantID,
+			"asset_id":   c.AssetID,
+			"check_name": c.CheckName,
+			"created_at": now,
+		},
+		"$set": bson.M{
+			"check_type":   c.CheckType,
+			"status":       c.Status,
+			"output":       c.Output,
+			"metric":       c.Metric,
+			"metric_unit":  c.MetricUnit,
+			"threshold":    c.Threshold,
+			"last_checked": c.LastChecked,
+			"next_check":   c.NextCheck,
+		},
+	}
 	opts := options.Update().SetUpsert(true)
 	_, err := r.db.Collection(CollectionMonChecks).UpdateOne(ctx, filter, update, opts)
 	return err
@@ -644,7 +678,11 @@ func (r *MongoRepository) ListRunbooks(ctx context.Context, f RunbookFilter) ([]
 		filter["category"] = f.Category
 	}
 	if f.Search != "" {
-		filter["title"] = bson.M{"$regex": f.Search, "$options": "i"}
+		s := f.Search
+		if len(s) > maxSearchLen {
+			s = s[:maxSearchLen]
+		}
+		filter["title"] = bson.M{"$regex": regexp.QuoteMeta(s), "$options": "i"}
 	}
 	total, err := r.db.Collection(CollectionRunbooks).CountDocuments(ctx, filter)
 	if err != nil {

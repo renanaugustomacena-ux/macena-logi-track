@@ -144,7 +144,7 @@ func run() error {
 		defer cancel()
 		_ = mongoRepo.Disconnect(ctx)
 	}()
-	if err := mongoRepo.EnsureIndexes(rootCtx); err != nil {
+	if err := mongoRepo.EnsureIndexes(rootCtx, cfg.Modules); err != nil {
 		log.Warn("ensure indexes failed", zap.Error(err))
 	}
 
