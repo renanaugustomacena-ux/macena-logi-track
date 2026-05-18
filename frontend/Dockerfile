@@ -20,7 +20,7 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
