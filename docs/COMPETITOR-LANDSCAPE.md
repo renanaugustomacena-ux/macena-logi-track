@@ -68,8 +68,9 @@ URL: <https://www.modularsoftware.it/main.php?pagina=info2&cod_prog=SVFOR02>
 | Style | Mid-2000s aesthetic, dense text, character encoding issues (€ shown as `�`) |
 | Polish | **5/10** by their own visual standards |
 
-**LogiTrack delta**: We are explicitly RENTRI-ready (they aren't on
-the public page). We're more expensive (€18k+ vs €245+€95/sem) but
+**LogiTrack delta**: We are built around the RENTRI workflow — FIR
+state machine and queued transmission today, live adapter developed
+per engagement (they show nothing RENTRI-related on the public page). We're more expensive (€18k+ vs €245+€95/sem) but
 deliver a customer-owned, customer-installed application with source
 code intestato al cliente. They sell a hosted multi-tenant subscription
 with no source-code option. Different product, different segment.
