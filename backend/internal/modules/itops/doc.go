@@ -18,6 +18,7 @@
 //     does NOT import any other domain module. Modules are leaf nodes
 //     in the dependency graph.
 //
-// This module is toggled via MODULE_ITOPS (default true). When disabled,
-// no itops routes are registered and no itops collections are created.
+// This module is toggled via MODULE_ITOPS (default false, see
+// internal/config/config.go). When disabled, no itops routes are
+// registered and no itops collections are created.
 package itops

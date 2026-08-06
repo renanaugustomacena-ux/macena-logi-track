@@ -79,7 +79,7 @@ backend/internal/
 │   │   ├── driver.go
 │   │   ├── geofence.go
 │   │   └── vehicle.go
-│   └── rifiuti/                 (MODULE 2 — Italian SME waste-transport, RENTRI-ready)
+│   └── rifiuti/                 (MODULE 2 — Italian SME waste-transport, RENTRI-oriented)
 │       ├── doc.go
 │       ├── compliance.go        (CER/EER + Albo categoria + impianto operazione)
 │       ├── party.go             (Produttore, Trasportatore, Destinatario + Albo guards)

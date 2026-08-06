@@ -116,7 +116,7 @@ the kit-honesty audit pass.
   `internal/obs`, `internal/config`, `internal/demo`,
   `cmd/simulator` are at 0%.
 - **CI behaviour:** the workflow keeps the 80% gate as the *target*
-  (per the global CLAUDE.md testing rule) but emits it as a `::warning::`
+  (per the repository's global testing rule) but emits it as a `::warning::`
   rather than failing the job, so the kit can ship while the platform
   test backlog is worked down.
 - **Trigger / ratchet plan:** raise the gate by ~10 points whenever

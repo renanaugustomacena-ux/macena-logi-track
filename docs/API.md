@@ -422,7 +422,8 @@ authenticated, all tenant-scoped.
 
 ## 8. Rifiuti
 
-Module 2: trasporto rifiuti speciali (RENTRI-ready). Regulatory
+Module 2: trasporto rifiuti speciali, orientato al flusso RENTRI
+(coda di trasmissione oggi, adapter live per ingaggio). Regulatory
 anchors in [`MODULE-RIFIUTI.md`](MODULE-RIFIUTI.md).
 
 ### Anagrafiche
