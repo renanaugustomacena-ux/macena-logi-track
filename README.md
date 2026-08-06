@@ -29,17 +29,44 @@ and stays on retainer for compliance updates and feature work.
   telematics webhooks, SHA-256-chained chain-of-custody log, OSRM-backed
   route optimisation with fallback. Pitch in
   [`docs/PITCH.md`](docs/PITCH.md).
-- **`rifiuti`** — RENTRI-ready waste-transport vertical for
-  trasportatori di rifiuti speciali iscritti Albo cat. 4/5/8. Owns the
-  FIR (Formulario Identificazione Rifiuti) state machine, the registro
-  cronologico carico/scarico, the EER catalogue and the RENTRI client
-  adapter (queued-stub default; live HTTP one constructor away). Pitch
-  in [`docs/PITCH-RIFIUTI.md`](docs/PITCH-RIFIUTI.md), regulatory
+- **`rifiuti`** — waste-transport vertical for trasportatori di
+  rifiuti speciali iscritti Albo cat. 4/5/8. Owns the FIR (Formulario
+  Identificazione Rifiuti) state machine with real Albo / plant
+  authorisation checks, and the RENTRI queued-stub adapter (idempotent
+  internal queue; numbers are `STUB-`-prefixed). The live RENTRI HTTP
+  adapter, the registro cronologico carico/scarico and the full EER
+  catalogue are **not implemented yet** — see "Honest status" below.
+  Pitch in [`docs/PITCH-RIFIUTI.md`](docs/PITCH-RIFIUTI.md), regulatory
   anchors in [`docs/MODULE-RIFIUTI.md`](docs/MODULE-RIFIUTI.md).
 
 The kit doctrine is in
 [`docs/DOMAIN-MODULES.md`](docs/DOMAIN-MODULES.md): shared platform +
 leaf modules + per-customer overlay; modules never import each other.
+
+## Honest status (2026-08-06)
+
+Read this before selling or reusing the kit:
+
+- The **registro cronologico carico/scarico does not exist**: only the
+  struct and a Mongo index are in place; no endpoint writes or reads
+  the collection.
+- The **SHA-256 chain of custody** is implemented and tested, but no
+  handler appends events: in practice every shipment carries only its
+  genesis record.
+- **No EER catalogue**: CER validation is format-only (regex); unknown
+  codes are accepted.
+- **No RENTRI HTTP adapter** (not even sandbox) and **no telematics
+  adapters** (Viasat/Octo/Geotab): ingestion happens through the
+  generic waypoint endpoint.
+- The `itops` and `fleet_it` modules (42 routes) exist but are **off
+  by default** (`MODULE_ITOPS` / `MODULE_FLEET_IT = false`) and are
+  not documented in `docs/API.md`.
+- Test coverage is ~9% overall: the rifiuti domain and the hash chain
+  are well covered; handlers, repositories and middleware are at zero,
+  and there are no integration tests against Mongo/Redis.
+
+The rest of the ledger is in
+[`docs/TECHNICAL-DEBT.md`](docs/TECHNICAL-DEBT.md).
 
 ---
 

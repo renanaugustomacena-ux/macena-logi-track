@@ -48,11 +48,14 @@ server intestato a te (Aruba IT, infrastruttura on-premise, oppure
 cloud cliente) — non su un cloud condiviso con altre aziende. Cosa
 aggiunge il modulo rifiuti rispetto a quello logistico:
 
-1. **Modello di dominio completo** Produttore / Trasportatore /
-   Destinatario / FIR / Registro cronologico / Albo, con codici
-   EER (catalogo Decisione UE 2014/955), classi di pericolo
-   HP1–HP15 (Reg. UE 1357/2014), e mapping ADR per i rifiuti
-   pericolosi.
+1. **Modello di dominio** Produttore / Trasportatore /
+   Destinatario / FIR / Albo, con classi di pericolo HP1–HP15
+   (Reg. UE 1357/2014) e mapping ADR per i rifiuti pericolosi.
+   Onestà sul perimetro: il registro cronologico carico/scarico e
+   il catalogo EER completo (Decisione UE 2014/955) **non sono
+   ancora nel kit** — oggi c'è la validazione del formato dei
+   codici EER — e vengono sviluppati nelle prime settimane
+   dell'ingaggio.
 2. **Ciclo di vita FIR digitale completo** (bozza → vidimato →
    consegnato al trasportatore → in transito → consegnato al
    destinatario → chiuso, con rami "respinto" e "annullato"). Ogni
@@ -67,17 +70,20 @@ aggiunge il modulo rifiuti rispetto a quello logistico:
    software opera in modalità "coda interna" — accumula i FIR
    pronti per la trasmissione, garantisce idempotenza in caso di
    ritrasmissione, ti permette di esercitare la piattaforma sui
-   tuoi dati reali. Quando arriva il certificato digitale RENTRI
-   intestato alla tua impresa, l'attivazione della trasmissione
-   live è una semplice configurazione, senza riscrittura del
-   software. Sandbox RENTRI configurata fin da subito per
-   collaudo.
-5. **Catena di custodia firmata SHA-256 + audit-log multi-tenant**
-   già platform-grade (eredità del modulo logistico).
-6. **Tracciamento GPS dei mezzi** (Viasat, Octo, Geotab) e
-   geofencing già integrati: il pannello dispatcher vede in tempo
-   reale dove è il mezzo, quale FIR sta trasportando, e quanto
-   manca all'arrivo.
+   tuoi dati reali. L'adapter HTTP verso la sandbox RENTRI **non è
+   ancora scritto**: si sviluppa durante l'ingaggio sopra
+   l'interfaccia già pronta della coda interna, e il passaggio alla
+   trasmissione live avviene quando arriva il certificato digitale
+   RENTRI intestato alla tua impresa.
+5. **Catena di custodia SHA-256** implementata e testata a livello
+   di piattaforma (eredità del modulo logistico); il collegamento
+   degli eventi operativi (carico, sigillo, consegna) alla catena
+   si completa durante l'ingaggio.
+6. **Tracciamento GPS dei mezzi** tramite endpoint generico di
+   waypoint già funzionante, con pannello dispatcher in tempo
+   reale. Gli adapter per le telematiche commerciali (Viasat,
+   Octo, Geotab) **non sono inclusi nel kit**: si sviluppano
+   durante l'ingaggio su specifica del fornitore scelto.
 
 ## Target customer
 
@@ -107,9 +113,10 @@ Engagement standard: **6–8 settimane** dalla firma del preventivo
 alla consegna delle chiavi dell'applicazione operativa.
 
 - **Settimana 1** — onboarding anagrafiche Produttori /
-  Trasportatori / Destinatari, sincronizzazione delle iscrizioni
-  Albo del cliente (catalogo curato; verifica giornaliera in
-  background).
+  Trasportatori / Destinatari e caricamento delle iscrizioni Albo
+  del cliente. La verifica di scadenza e categoria alla creazione
+  del FIR è già attiva nel kit; il monitoraggio giornaliero in
+  background si sviluppa durante l'ingaggio.
 - **Settimana 2** — ingestione FIR esistenti via import CSV /
   scansione retroattiva, taratura della macchina a stati con i
   flussi reali del cliente, attivazione watchdog 90 giorni.
