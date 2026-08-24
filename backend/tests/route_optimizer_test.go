@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -110,6 +111,103 @@ func TestRouteOptimizerFallback(t *testing.T) {
 	}
 	if r.Distance <= 0 || r.Duration <= 0 {
 		t.Fatalf("fallback produced zero distance/duration: %+v", r)
+	}
+}
+
+// TestRouteOptimizerTripReordersWaypoints verifies that with more than
+// two waypoints the optimiser queries the OSRM trip service with first
+// and last stop pinned, and reports the optimised visiting order.
+func TestRouteOptimizerTripReordersWaypoints(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/trip/v1/driving/") {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		q := r.URL.Query()
+		if q.Get("roundtrip") != "false" || q.Get("source") != "first" || q.Get("destination") != "last" {
+			t.Errorf("unexpected trip query %q", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		// Input order A,B,C,D; optimal visiting order A,C,B,D. The
+		// waypoints array is in input order and waypoint_index is the
+		// position of each input waypoint within the trip.
+		_, _ = w.Write([]byte(`{"code":"Ok","waypoints":[{"waypoint_index":0},{"waypoint_index":2},{"waypoint_index":1},{"waypoint_index":3}],"trips":[{"distance":42000,"duration":2400,"geometry":"perm","legs":[{"distance":14000,"duration":800},{"distance":14000,"duration":800},{"distance":14000,"duration":800}]}]}`))
+	}))
+	defer ts.Close()
+
+	cfg := config.OSRMConfig{
+		BaseURL:      ts.URL,
+		Timeout:      2_000_000_000,
+		AllowedHosts: []string{extractHost(ts.URL)},
+		CacheSize:    10,
+	}
+	opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
+	r, err := opt.OptimiseRoute(context.Background(), services.RouteRequest{
+		Waypoints: []logistics.GeoPoint{
+			logistics.NewGeoPoint(10.793, 45.341), // A
+			logistics.NewGeoPoint(11.004, 45.439), // B
+			logistics.NewGeoPoint(10.965, 45.398), // C
+			logistics.NewGeoPoint(10.993, 45.549), // D
+		},
+	})
+	if err != nil {
+		t.Fatalf("OptimiseRoute returned error: %v", err)
+	}
+	if r.Source != "osrm" {
+		t.Fatalf("expected osrm, got %q", r.Source)
+	}
+	if want := []int{0, 2, 1, 3}; !slices.Equal(r.WaypointOrder, want) {
+		t.Fatalf("waypoint order = %v, expected %v", r.WaypointOrder, want)
+	}
+	if r.Distance != 42000 {
+		t.Fatalf("distance = %v, expected 42000", r.Distance)
+	}
+}
+
+// TestRouteOptimizerTripFallsBackToRoute verifies that a trip failure
+// degrades to a route query in the given order instead of dropping
+// straight to the haversine estimate.
+func TestRouteOptimizerTripFallsBackToRoute(t *testing.T) {
+	tripCalls, routeCalls := 0, 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/trip/v1/"):
+			tripCalls++
+			w.WriteHeader(500)
+		case strings.HasPrefix(r.URL.Path, "/route/v1/"):
+			routeCalls++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"code":"Ok","routes":[{"distance":21000,"duration":1200,"geometry":"seq","legs":[{"distance":10500,"duration":600},{"distance":10500,"duration":600}]}]}`))
+		default:
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	defer ts.Close()
+
+	cfg := config.OSRMConfig{
+		BaseURL:      ts.URL,
+		Timeout:      2_000_000_000,
+		AllowedHosts: []string{extractHost(ts.URL)},
+		CacheSize:    10,
+	}
+	opt := services.NewOSRMOptimizer(cfg, zap.NewNop())
+	r, err := opt.OptimiseRoute(context.Background(), services.RouteRequest{
+		Waypoints: []logistics.GeoPoint{
+			logistics.NewGeoPoint(10.793, 45.341),
+			logistics.NewGeoPoint(10.965, 45.398),
+			logistics.NewGeoPoint(11.004, 45.439),
+		},
+	})
+	if err != nil {
+		t.Fatalf("OptimiseRoute returned error: %v", err)
+	}
+	if r.Source != "osrm" {
+		t.Fatalf("expected osrm via route fallback, got %q", r.Source)
+	}
+	if want := []int{0, 1, 2}; !slices.Equal(r.WaypointOrder, want) {
+		t.Fatalf("waypoint order = %v, expected identity %v", r.WaypointOrder, want)
+	}
+	if tripCalls != 1 || routeCalls != 1 {
+		t.Fatalf("expected 1 trip + 1 route call, got %d + %d", tripCalls, routeCalls)
 	}
 }
 
