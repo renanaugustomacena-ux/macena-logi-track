@@ -10,8 +10,9 @@ deployment cliente.
 LogiTrack combina ingestione telematica via webhook, archiviazione
 documentale flessibile, pub/sub Redis per la fan-out WebSocket e una
 piattaforma multi-modulo per i verticali. I verticali shipping oggi:
-`logistics` (visibilità supply-chain) e `rifiuti` (RENTRI-ready
-trasporto rifiuti speciali).
+`logistics` (visibilità supply-chain) e `rifiuti` (trasporto rifiuti
+speciali orientato al flusso RENTRI: coda di trasmissione oggi,
+adapter live per ingaggio).
 
 ```
    GPS / Telematics webhook ─────┐

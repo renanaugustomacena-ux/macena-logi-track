@@ -69,7 +69,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Test with coverage
         run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
-      - name: Coverage gate (target 80% per CLAUDE.md, current floor 9%)
+      - name: Coverage gate (target 80% per repo standard, current floor 9%)
         # The kit's rifiuti / rentri / httpretry packages clear the 80%
         # gate, but platform layers (handlers, repository, services,
         # middleware, obs) ship at ~0% and bring the total to ~9%. The

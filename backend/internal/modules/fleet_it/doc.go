@@ -15,6 +15,7 @@
 //     logistics types (Vehicle, Driver) as foreign-key strings,
 //     but does NOT import other domain modules directly.
 //
-// This module is toggled via MODULE_FLEET_IT (default true). When
-// disabled, fleet-IT routes and collections are skipped.
+// This module is toggled via MODULE_FLEET_IT (default false, see
+// internal/config/config.go). When disabled, fleet-IT routes and
+// collections are skipped.
 package fleet_it
